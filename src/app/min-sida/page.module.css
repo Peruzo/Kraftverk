@@ -1,0 +1,189 @@
+.page {
+  padding: var(--space-8) 0;
+}
+
+.header {
+  margin-bottom: var(--space-12);
+}
+
+.title {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  margin-bottom: var(--space-2);
+}
+
+.subtitle {
+  font-size: var(--text-lg);
+  color: var(--color-muted);
+}
+
+.section {
+  margin-bottom: var(--space-12);
+}
+
+.sectionTitle {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin-bottom: var(--space-6);
+}
+
+/* Membership card */
+.membershipCard {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .membershipCard {
+    flex-direction: row;
+    justify-content: space-between;
+    align-items: center;
+  }
+}
+
+.membershipInfo {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.membershipName {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+}
+
+.membershipPrice {
+  font-size: var(--text-lg);
+  color: var(--color-accent);
+}
+
+.membershipFeatures {
+  display: flex;
+  gap: var(--space-8);
+}
+
+.feature {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.featureLabel {
+  font-size: var(--text-xs);
+  color: var(--color-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.featureValue {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+/* KPI Grid */
+.kpiGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+  margin-bottom: var(--space-4);
+}
+
+@media (min-width: 640px) {
+  .kpiGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.kpi {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.kpiValue {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  color: var(--color-accent);
+}
+
+.kpiLabel {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.kpiNote {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  text-align: center;
+  padding: var(--space-4);
+  background: var(--color-surface);
+  border-radius: var(--radius-md);
+  border: var(--border-1);
+}
+
+/* Bookings */
+.bookingsList {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.booking {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.bookingHeader {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--space-4);
+}
+
+.bookingClass {
+  font-size: var(--text-lg);
+  font-weight: 600;
+  margin-bottom: var(--space-1);
+}
+
+.bookingInstructor {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.bookingMeta {
+  display: flex;
+  gap: var(--space-4);
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+}
+
+.bookingDate {
+  color: var(--color-text);
+}
+
+.bookingActions {
+  display: flex;
+  gap: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: var(--border-1);
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  padding: var(--space-12);
+  color: var(--color-muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+
+
+
+

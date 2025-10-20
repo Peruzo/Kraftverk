@@ -1,0 +1,194 @@
+[
+  {
+    "id": "strength-foundation",
+    "title": "Strength Foundation",
+    "category": "Styrka",
+    "duration": 60,
+    "intensity": "Medel",
+    "description": "Bygg stabil grundstyrka med grundövningar och progressiv överbelastning.",
+    "image": "https://images.unsplash.com/photo-1581009146145-b5ef050c2e1e?q=80&w=800",
+    "zoneProfile": {
+      "grey": 15,
+      "blue": 20,
+      "green": 15,
+      "orange": 8,
+      "red": 2
+    }
+  },
+  {
+    "id": "power-conditioning",
+    "title": "Power Conditioning",
+    "category": "Conditioning",
+    "duration": 45,
+    "intensity": "Hög",
+    "description": "Intervallbaserad träning som maximerar din kondition och explosivitet.",
+    "image": "https://images.unsplash.com/photo-1571902943202-507ec2618e8f?q=80&w=800",
+    "zoneProfile": {
+      "grey": 5,
+      "blue": 10,
+      "green": 12,
+      "orange": 12,
+      "red": 6
+    }
+  },
+  {
+    "id": "mobility-flow",
+    "title": "Mobility Flow",
+    "category": "Mobilitet",
+    "duration": 45,
+    "intensity": "Låg",
+    "description": "Aktiv rörlighetsträning för bättre rörelse och återhämtning.",
+    "image": "https://images.unsplash.com/photo-1544367567-0f2fcb009e0b?q=80&w=800",
+    "zoneProfile": {
+      "grey": 30,
+      "blue": 10,
+      "green": 5,
+      "orange": 0,
+      "red": 0
+    }
+  },
+  {
+    "id": "strength-hypertrophy",
+    "title": "Hypertrophy Build",
+    "category": "Styrka",
+    "duration": 75,
+    "intensity": "Hög",
+    "description": "Muskeltillväxt med volymfokus och strukturerad progression.",
+    "image": "https://images.unsplash.com/photo-1583454110551-21f2fa2afe61?q=80&w=800",
+    "zoneProfile": {
+      "grey": 10,
+      "blue": 20,
+      "green": 25,
+      "orange": 15,
+      "red": 5
+    }
+  },
+  {
+    "id": "cardio-endurance",
+    "title": "Endurance Zone",
+    "category": "Conditioning",
+    "duration": 60,
+    "intensity": "Medel",
+    "description": "Bygg aerob kapacitet i optimal pulszon för långvarig uthållighet.",
+    "image": "https://images.unsplash.com/photo-1476480862126-209bfaa8edc8?q=80&w=800",
+    "zoneProfile": {
+      "grey": 10,
+      "blue": 25,
+      "green": 20,
+      "orange": 5,
+      "red": 0
+    }
+  },
+  {
+    "id": "strength-olympic",
+    "title": "Olympic Lifts",
+    "category": "Styrka",
+    "duration": 60,
+    "intensity": "Hög",
+    "description": "Teknisk styrketräning med fokus på ryck och stöt.",
+    "image": "https://images.unsplash.com/photo-1541534741688-6078c6bfb5c5?q=80&w=800",
+    "zoneProfile": {
+      "grey": 20,
+      "blue": 15,
+      "green": 15,
+      "orange": 8,
+      "red": 2
+    }
+  },
+  {
+    "id": "hiit-blast",
+    "title": "HIIT Blast",
+    "category": "Conditioning",
+    "duration": 30,
+    "intensity": "Hög",
+    "description": "Intensiva intervaller för maximal fettförbränning och kondition.",
+    "image": "https://images.unsplash.com/photo-1549576490-b0b4831ef60a?q=80&w=800",
+    "zoneProfile": {
+      "grey": 3,
+      "blue": 5,
+      "green": 7,
+      "orange": 10,
+      "red": 5
+    }
+  },
+  {
+    "id": "yoga-restore",
+    "title": "Restore Yoga",
+    "category": "Mobilitet",
+    "duration": 60,
+    "intensity": "Låg",
+    "description": "Återställande yoga med fokus på andning och djupavslappning.",
+    "image": "https://images.unsplash.com/photo-1506126613408-eca07ce68773?q=80&w=800",
+    "zoneProfile": {
+      "grey": 50,
+      "blue": 10,
+      "green": 0,
+      "orange": 0,
+      "red": 0
+    }
+  },
+  {
+    "id": "strength-powerlifting",
+    "title": "Powerlifting Focus",
+    "category": "Styrka",
+    "duration": 90,
+    "intensity": "Hög",
+    "description": "Maximal styrka i knäböj, bänkpress och marklyft.",
+    "image": "https://images.unsplash.com/photo-1532029837206-abbe2b7620e3?q=80&w=800",
+    "zoneProfile": {
+      "grey": 25,
+      "blue": 25,
+      "green": 20,
+      "orange": 15,
+      "red": 5
+    }
+  },
+  {
+    "id": "boxing-conditioning",
+    "title": "Boxing Conditioning",
+    "category": "Conditioning",
+    "duration": 45,
+    "intensity": "Hög",
+    "description": "Boxningsinspirerad träning med hög intensitet och koordination.",
+    "image": "https://images.unsplash.com/photo-1549719386-74dfcbf7dbed?q=80&w=800",
+    "zoneProfile": {
+      "grey": 5,
+      "blue": 8,
+      "green": 15,
+      "orange": 12,
+      "red": 5
+    }
+  },
+  {
+    "id": "core-stability",
+    "title": "Core Stability",
+    "category": "Styrka",
+    "duration": 45,
+    "intensity": "Medel",
+    "description": "Stärk din core för bättre stabilitet och skadeförebyggande.",
+    "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800",
+    "zoneProfile": {
+      "grey": 10,
+      "blue": 20,
+      "green": 12,
+      "orange": 3,
+      "red": 0
+    }
+  },
+  {
+    "id": "dynamic-stretch",
+    "title": "Dynamic Stretch",
+    "category": "Mobilitet",
+    "duration": 30,
+    "intensity": "Låg",
+    "description": "Aktiv stretching för ökad rörlighet och prestation.",
+    "image": "https://images.unsplash.com/photo-1518611012118-696072aa579a?q=80&w=800",
+    "zoneProfile": {
+      "grey": 25,
+      "blue": 5,
+      "green": 0,
+      "orange": 0,
+      "red": 0
+    }
+  }
+]

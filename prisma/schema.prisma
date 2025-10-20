@@ -1,0 +1,74 @@
+// Kraftverk Studio - Datamodell
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  name         String?
+  membershipId String
+  membership   Membership @relation(fields: [membershipId], references: [id])
+  bookings     Booking[]
+  createdAt    DateTime @default(now())
+}
+
+model Membership {
+  id                String  @id
+  name              String
+  price             Int
+  bookingWindowDays Int
+  guestAllowance    Int
+  features          String  // JSON string array
+  users             User[]
+}
+
+model ClassTemplate {
+  id          String          @id @default(cuid())
+  title       String
+  category    String
+  duration    Int
+  intensity   String
+  zoneProfile String?         // JSON string
+  instances   ClassInstance[]
+}
+
+model ClassInstance {
+  id         String    @id @default(cuid())
+  templateId String
+  template   ClassTemplate @relation(fields: [templateId], references: [id])
+  studioId   String
+  trainerId  String
+  startTime  DateTime
+  spots      Int
+  waitlist   String    // JSON string array
+  bookings   Booking[]
+}
+
+model Booking {
+  id              String        @id @default(cuid())
+  userId          String
+  user            User          @relation(fields: [userId], references: [id])
+  classInstanceId String
+  classInstance   ClassInstance @relation(fields: [classInstanceId], references: [id])
+  status          String
+  bookedAt        DateTime      @default(now())
+}
+
+model Trainer {
+  id          String @id @default(cuid())
+  name        String
+  bio         String
+  specialties String // JSON string array
+  image       String?
+}
+
+
+
+
+

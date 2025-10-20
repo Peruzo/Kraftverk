@@ -1,0 +1,131 @@
+.page {
+  padding: var(--space-8) 0;
+}
+
+.header {
+  text-align: center;
+  margin-bottom: var(--space-8);
+}
+
+.title {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  margin-bottom: var(--space-3);
+}
+
+.subtitle {
+  font-size: var(--text-md);
+  color: var(--color-muted);
+}
+
+/* Studio selector */
+.studioSelector {
+  display: flex;
+  gap: var(--space-3);
+  margin-bottom: var(--space-8);
+  justify-content: center;
+}
+
+.studioBtn {
+  padding: var(--space-3) var(--space-6);
+  font-size: var(--text-md);
+  font-weight: 600;
+  background: var(--color-surface);
+  border: var(--border-1);
+  border-radius: var(--radius-md);
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+}
+
+.studioBtn:hover {
+  background: var(--color-surface-hover);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: var(--color-text);
+}
+
+.studioBtn.active {
+  background: var(--color-accent);
+  border-color: var(--color-accent);
+  color: var(--color-bg);
+}
+
+/* Filters */
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-6);
+  margin-bottom: var(--space-8);
+  padding: var(--space-6);
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  border: var(--border-1);
+}
+
+@media (min-width: 768px) {
+  .filters {
+    flex-direction: row;
+  }
+}
+
+/* Policy box */
+.policyBox {
+  background: var(--color-surface);
+  border: 1px solid var(--color-accent);
+  border-radius: var(--radius-md);
+  padding: var(--space-4);
+  margin-bottom: var(--space-8);
+  text-align: center;
+}
+
+.policyText {
+  font-size: var(--text-sm);
+  color: var(--color-muted);
+  margin: 0;
+}
+
+.policyText strong {
+  color: var(--color-text);
+  font-weight: 600;
+}
+
+/* Class list */
+.classList {
+  margin-top: var(--space-8);
+}
+
+.classListTitle {
+  font-size: var(--text-xl);
+  font-weight: 600;
+  margin-bottom: var(--space-6);
+}
+
+.classGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .classGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .classGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+/* Empty state */
+.emptyState {
+  text-align: center;
+  padding: var(--space-16);
+  color: var(--color-muted);
+}
+
+
+
+
+

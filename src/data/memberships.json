@@ -1,0 +1,73 @@
+[
+  {
+    "id": "base",
+    "name": "Base",
+    "price": 399,
+    "bookingWindowDays": 5,
+    "guestAllowance": 0,
+    "description": "Allt du behöver för att komma igång",
+    "features": [
+      "Off-peak träning (06-16, helger)",
+      "Gym & utvalda klasser",
+      "Boka 5 dagar framåt",
+      "Digitalt medlemskort",
+      "Medlemsapp"
+    ]
+  },
+  {
+    "id": "flex",
+    "name": "Flex",
+    "price": 599,
+    "bookingWindowDays": 7,
+    "guestAllowance": 1,
+    "popular": true,
+    "description": "Alla tider, alla klasser",
+    "features": [
+      "Alla öppettider",
+      "Alla klasser",
+      "Boka 7 dagar framåt",
+      "1 gästpass/månad",
+      "Digitalt medlemskort",
+      "Medlemsapp",
+      "Träningslogg"
+    ]
+  },
+  {
+    "id": "studio-plus",
+    "name": "Studio+",
+    "price": 899,
+    "bookingWindowDays": 9,
+    "guestAllowance": 2,
+    "description": "Premium med recovery & prioritet",
+    "features": [
+      "Alla öppettider",
+      "Alla klasser + signaturklasser",
+      "Boka 9 dagar framåt",
+      "2 gästpass/månad",
+      "Recovery-zon (IR-bastu, bad)",
+      "PT-kredit 1 session/månad",
+      "Träningsuppdrag (quests)",
+      "Digitalt medlemskort",
+      "Medlemsapp",
+      "Träningslogg & analytics"
+    ]
+  },
+  {
+    "id": "dagpass",
+    "name": "Dagpass",
+    "price": 149,
+    "bookingWindowDays": 0,
+    "guestAllowance": 0,
+    "description": "Prova oss en dag",
+    "features": [
+      "Tillgång en dag",
+      "Gym & utvalda klasser",
+      "Direktinpassering med QR"
+    ]
+  }
+]
+
+
+
+
+

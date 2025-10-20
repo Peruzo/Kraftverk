@@ -1,0 +1,156 @@
+"use client";
+
+import React, { useState, useMemo } from "react";
+import ClassCard from "@/components/booking/ClassCard";
+import FilterChips from "@/components/booking/FilterChips";
+import classTemplates from "@/data/classes.json";
+import trainers from "@/data/trainers.json";
+import type { ClassInstance } from "@/types";
+import styles from "./page.module.css";
+
+export default function SchemaPage() {
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  const [selectedIntensity, setSelectedIntensity] = useState<string | null>(null);
+  const [selectedStudio, setSelectedStudio] = useState<string>("stockholm-city");
+
+  // Generate mock class instances for today/tomorrow
+  const classInstances: ClassInstance[] = useMemo(() => {
+    const instances: ClassInstance[] = [];
+    const today = new Date();
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    const times = ["07:00", "10:00", "12:00", "18:00", "19:30"];
+
+    classTemplates.forEach((template, idx) => {
+      times.forEach((time, timeIdx) => {
+        const [hours, minutes] = time.split(":").map(Number);
+        const classDate = timeIdx < 3 ? new Date(today) : new Date(today);
+        classDate.setHours(hours, minutes, 0, 0);
+
+        const trainer = trainers[idx % trainers.length];
+
+        instances.push({
+          id: `${template.id}-${time}-${timeIdx}`,
+          templateId: template.id,
+          template,
+          studioId: "stockholm-city",
+          trainerId: trainer.id,
+          trainer,
+          startTime: classDate.toISOString(),
+          spots: 20,
+          bookedSpots: Math.floor(Math.random() * 22), // Random booking status
+        });
+      });
+    });
+
+    return instances.sort(
+      (a, b) => new Date(a.startTime).getTime() - new Date(b.startTime).getTime()
+    );
+  }, []);
+
+  // Filter classes
+  const filteredClasses = useMemo(() => {
+    return classInstances.filter((instance) => {
+      if (selectedCategory && instance.template?.category !== selectedCategory) {
+        return false;
+      }
+      if (selectedIntensity && instance.template?.intensity !== selectedIntensity) {
+        return false;
+      }
+      return true;
+    });
+  }, [classInstances, selectedCategory, selectedIntensity]);
+
+  const categories = Array.from(new Set(classTemplates.map((c) => c.category)));
+  const intensities = ["Låg", "Medel", "Hög"];
+  const studios = [
+    { id: "stockholm-city", name: "Stockholm City" },
+    { id: "stockholm-sodermalm", name: "Södermalm" },
+  ];
+
+  const handleBookClass = (classInstance: ClassInstance) => {
+    alert(`Bokning av ${classInstance.template?.title} - Detta kopplas till API senare`);
+  };
+
+  return (
+    <div className="container">
+      <div className={styles.page}>
+        <div className={styles.header}>
+          <h1 className={styles.title}>Schema & Boka</h1>
+          <p className={styles.subtitle}>
+            Boka klasser upp till {selectedStudio === "stockholm-city" ? "7" : "5"} dagar framåt
+            (beroende på medlemskap)
+          </p>
+        </div>
+
+        {/* Studio selector */}
+        <div className={styles.studioSelector}>
+          {studios.map((studio) => (
+            <button
+              key={studio.id}
+              className={`${styles.studioBtn} ${
+                selectedStudio === studio.id ? styles.active : ""
+              }`}
+              onClick={() => setSelectedStudio(studio.id)}
+            >
+              {studio.name}
+            </button>
+          ))}
+        </div>
+
+        {/* Filters */}
+        <div className={styles.filters}>
+          <FilterChips
+            label="Kategori"
+            options={categories}
+            selected={selectedCategory}
+            onSelect={setSelectedCategory}
+          />
+          <FilterChips
+            label="Intensitet"
+            options={intensities}
+            selected={selectedIntensity}
+            onSelect={setSelectedIntensity}
+          />
+        </div>
+
+        {/* Policy box */}
+        <div className={styles.policyBox}>
+          <p className={styles.policyText}>
+            <strong>Bokningsfönster:</strong> Base 5 dagar • Flex 7 dagar • Studio+ 9 dagar •{" "}
+            <strong>Avbokning:</strong> 2h före start • <strong>Köplats?</strong> Vi pushar dig om
+            du får plats
+          </p>
+        </div>
+
+        {/* Class list */}
+        <div className={styles.classList}>
+          <h2 className={styles.classListTitle}>
+            {filteredClasses.length} klasser tillgängliga
+          </h2>
+          <div className={styles.classGrid}>
+            {filteredClasses.map((classInstance) => (
+              <ClassCard
+                key={classInstance.id}
+                classInstance={classInstance}
+                onBook={() => handleBookClass(classInstance)}
+              />
+            ))}
+          </div>
+        </div>
+
+        {filteredClasses.length === 0 && (
+          <div className={styles.emptyState}>
+            <p>Inga klasser matchar dina filter. Prova att ändra urvalet.</p>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+
+
+
+

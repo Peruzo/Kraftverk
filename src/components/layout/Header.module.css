@@ -1,0 +1,158 @@
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 50;
+  backdrop-filter: blur(12px);
+  background: color-mix(in oklab, var(--color-bg) 90%, transparent);
+  border-bottom: var(--border-1);
+}
+
+.inner {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 72px;
+  gap: var(--space-8);
+}
+
+/* Logo är nu en separat komponent */
+
+.nav {
+  display: none;
+  gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .nav {
+    display: flex;
+  }
+}
+
+.navLink {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color var(--transition-fast);
+  padding: var(--space-2) 0;
+  position: relative;
+}
+
+.navLink:hover {
+  color: var(--color-text);
+  opacity: 1;
+}
+
+.navLink.active {
+  color: var(--color-accent);
+}
+
+.navLink.active::after {
+  content: "";
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 2px;
+  background: var(--color-accent);
+}
+
+.actions {
+  display: none;
+  align-items: center;
+  gap: var(--space-4);
+}
+
+@media (min-width: 768px) {
+  .actions {
+    display: flex;
+  }
+}
+
+.userLink {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-text);
+}
+
+.loginBtn {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  padding: var(--space-2) var(--space-4);
+  background: var(--color-accent);
+  color: var(--color-bg);
+  border-radius: var(--radius-md);
+  transition: all var(--transition-fast);
+}
+
+.loginBtn:hover {
+  background: var(--color-accent-hover);
+  opacity: 1;
+}
+
+.logoutBtn {
+  font-size: var(--text-sm);
+  font-weight: 500;
+  color: var(--color-muted);
+  cursor: pointer;
+  transition: color var(--transition-fast);
+}
+
+.logoutBtn:hover {
+  color: var(--color-text);
+}
+
+/* Mobile menu button */
+.mobileMenuBtn {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: var(--space-2);
+  cursor: pointer;
+}
+
+@media (min-width: 768px) {
+  .mobileMenuBtn {
+    display: none;
+  }
+}
+
+.mobileMenuBtn span {
+  display: block;
+  width: 24px;
+  height: 2px;
+  background: var(--color-text);
+  transition: all var(--transition-fast);
+}
+
+/* Mobile menu */
+.mobileMenu {
+  display: flex;
+  flex-direction: column;
+  padding: var(--space-4) 0;
+  border-top: var(--border-1);
+  gap: var(--space-2);
+}
+
+@media (min-width: 768px) {
+  .mobileMenu {
+    display: none;
+  }
+}
+
+.mobileNavLink {
+  padding: var(--space-3) 0;
+  font-size: var(--text-md);
+  font-weight: 500;
+  color: var(--color-muted);
+  transition: color var(--transition-fast);
+  width: 100%;
+  text-align: left;
+  background: none;
+  cursor: pointer;
+}
+
+.mobileNavLink:hover,
+.mobileNavLink.active {
+  color: var(--color-accent);
+}
+

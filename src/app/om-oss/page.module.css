@@ -1,0 +1,248 @@
+.page {
+  padding: var(--space-8) 0;
+}
+
+/* Hero */
+.hero {
+  text-align: center;
+  margin-bottom: var(--space-16);
+  max-width: 800px;
+  margin-left: auto;
+  margin-right: auto;
+}
+
+.heroTitle {
+  font-size: var(--text-4xl);
+  font-weight: 700;
+  margin-bottom: var(--space-6);
+  background: linear-gradient(135deg, var(--color-text) 0%, var(--color-accent) 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.heroSubtitle {
+  font-size: var(--text-lg);
+  color: var(--color-muted);
+  line-height: 1.8;
+}
+
+/* Section */
+.section {
+  margin-bottom: var(--space-16);
+}
+
+.sectionTitle {
+  font-size: var(--text-3xl);
+  font-weight: 700;
+  margin-bottom: var(--space-3);
+  text-align: center;
+}
+
+.sectionSubtitle {
+  text-align: center;
+  color: var(--color-muted);
+  margin-bottom: var(--space-8);
+}
+
+/* Values */
+.valuesGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .valuesGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.value {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--space-3);
+}
+
+.valueIcon {
+  color: var(--color-accent);
+  margin-bottom: var(--space-3);
+}
+
+.valueIcon svg {
+  display: block;
+  margin: 0 auto;
+}
+
+.valueTitle {
+  font-size: var(--text-xl);
+  font-weight: 600;
+}
+
+.valueText {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+/* Policy */
+.policy {
+  text-align: center;
+}
+
+.policyTitle {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+  margin-bottom: var(--space-6);
+}
+
+.policyContent {
+  max-width: 700px;
+  margin: 0 auto;
+}
+
+.policyText {
+  color: var(--color-muted);
+  line-height: 1.8;
+  margin-bottom: var(--space-6);
+}
+
+.policyList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+  text-align: left;
+}
+
+.policyList li {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+/* Studios */
+.studiosGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-8);
+}
+
+@media (min-width: 768px) {
+  .studiosGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.studio {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-4);
+}
+
+.studioName {
+  font-size: var(--text-2xl);
+  font-weight: 700;
+}
+
+.studioAddress {
+  color: var(--color-muted);
+  line-height: 1.6;
+}
+
+.studioHours {
+  color: var(--color-muted);
+  line-height: 1.8;
+  padding: var(--space-4);
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+}
+
+.studioFeatures {
+  padding-top: var(--space-4);
+  border-top: var(--border-1);
+}
+
+.studioFeaturesTitle {
+  font-size: var(--text-sm);
+  font-weight: 600;
+  margin-bottom: var(--space-3);
+}
+
+.studioFeaturesList {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.studioFeaturesList li {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  padding-left: var(--space-6);
+  position: relative;
+}
+
+.studioFeaturesList li::before {
+  content: "✓";
+  position: absolute;
+  left: 0;
+  color: var(--color-accent);
+  font-weight: 700;
+}
+
+/* Trainers */
+.trainersGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+  margin-top: var(--space-8);
+}
+
+@media (min-width: 640px) {
+  .trainersGrid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .trainersGrid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+/* Accessibility */
+.accessibilityGrid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--space-6);
+}
+
+@media (min-width: 768px) {
+  .accessibilityGrid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.accessItem {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-3);
+}
+
+.accessTitle {
+  font-size: var(--text-lg);
+  font-weight: 600;
+}
+
+.accessText {
+  color: var(--color-muted);
+  font-size: var(--text-sm);
+  line-height: 1.6;
+}
+
