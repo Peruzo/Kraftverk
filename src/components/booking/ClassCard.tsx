@@ -10,9 +10,10 @@ import styles from "./ClassCard.module.css";
 type ClassCardProps = {
   classInstance: ClassInstance;
   onBook: () => void;
+  loading?: boolean;
 };
 
-export default function ClassCard({ classInstance, onBook }: ClassCardProps) {
+export default function ClassCard({ classInstance, onBook, loading = false }: ClassCardProps) {
   const { template, trainer, startTime, spots, bookedSpots = 0 } = classInstance;
   const spotsLeft = spots - bookedSpots;
   const isFull = spotsLeft <= 0;
@@ -103,8 +104,8 @@ export default function ClassCard({ classInstance, onBook }: ClassCardProps) {
               <span className={styles.spotsText}>{spotsLeft} platser kvar</span>
             )}
           </div>
-          <Button size="sm" onClick={onBook} disabled={isFull}>
-            {isFull ? "Ställ i kö" : "Boka"}
+          <Button size="sm" onClick={onBook} disabled={isFull || loading}>
+            {loading ? "Bearbetar..." : (isFull ? "Ställ i kö" : "Boka")}
           </Button>
         </div>
       </div>

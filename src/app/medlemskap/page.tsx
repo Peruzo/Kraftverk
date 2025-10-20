@@ -1,16 +1,38 @@
+"use client";
+
 import React from "react";
 import PricingCard from "@/components/membership/PricingCard";
 import memberships from "@/data/memberships.json";
 import styles from "./page.module.css";
 
-export const metadata = {
-  title: "Medlemskap — Kraftverk Studio",
-  description: "Välj det medlemskap som passar dig bäst. Base, Flex eller Studio+ med recovery.",
-};
-
 export default function MedlemskapPage() {
   const regularMemberships = memberships.filter((m) => m.id !== "dagpass");
   const dagpass = memberships.find((m) => m.id === "dagpass");
+
+  const handleMembershipSelect = async (membership: any) => {
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          membershipId: membership.id,
+          userId: "demo-user", // Replace with actual user ID later
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url; // Redirect to Stripe
+      } else {
+        alert(`Betalningsfel: ${data.error}`);
+      }
+    } catch (error) {
+      alert("Nätverksfel - försök igen senare");
+    }
+  };
 
   return (
     <div className={styles.page}>
@@ -41,7 +63,11 @@ export default function MedlemskapPage() {
         {/* Pricing cards */}
         <div className={styles.pricingGrid}>
           {regularMemberships.map((membership) => (
-            <PricingCard key={membership.id} membership={membership} />
+            <PricingCard 
+              key={membership.id} 
+              membership={membership}
+              onSelect={() => handleMembershipSelect(membership)}
+            />
           ))}
         </div>
 
@@ -50,7 +76,10 @@ export default function MedlemskapPage() {
           <div className={styles.dagpassSection} id="dagpass">
             <h2 className={styles.sectionTitle}>Eller prova oss först</h2>
             <div className={styles.dagpassCard}>
-              <PricingCard membership={dagpass} />
+              <PricingCard 
+                membership={dagpass}
+                onSelect={() => handleMembershipSelect(dagpass)}
+              />
             </div>
           </div>
         )}

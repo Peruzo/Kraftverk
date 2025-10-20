@@ -12,6 +12,7 @@ export default function SchemaPage() {
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [selectedIntensity, setSelectedIntensity] = useState<string | null>(null);
   const [selectedStudio, setSelectedStudio] = useState<string>("stockholm-city");
+  const [loading, setLoading] = useState<string | null>(null);
 
   // Generate mock class instances for today/tomorrow
   const classInstances: ClassInstance[] = useMemo(() => {
@@ -69,8 +70,33 @@ export default function SchemaPage() {
     { id: "stockholm-sodermalm", name: "Södermalm" },
   ];
 
-  const handleBookClass = (classInstance: ClassInstance) => {
-    alert(`Bokning av ${classInstance.template?.title} - Detta kopplas till API senare`);
+  const handleBookClass = async (classInstance: ClassInstance) => {
+    setLoading(classInstance.id);
+    
+    try {
+      const response = await fetch("/api/checkout", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          classInstanceId: classInstance.id,
+          userId: "demo-user", // Replace with actual user ID later
+        }),
+      });
+
+      const data = await response.json();
+
+      if (data.url) {
+        window.location.href = data.url; // Redirect to Stripe
+      } else {
+        alert(`Betalningsfel: ${data.error}`);
+      }
+    } catch (error) {
+      alert("Nätverksfel - försök igen senare");
+    } finally {
+      setLoading(null);
+    }
   };
 
   return (
@@ -135,6 +161,7 @@ export default function SchemaPage() {
                 key={classInstance.id}
                 classInstance={classInstance}
                 onBook={() => handleBookClass(classInstance)}
+                loading={loading === classInstance.id}
               />
             ))}
           </div>
