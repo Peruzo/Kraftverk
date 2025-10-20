@@ -5,9 +5,9 @@ const mockBookings: any[] = [];
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
-  const { id } = params;
+  const { id } = await params;
 
   const index = mockBookings.findIndex((b) => b.id === id);
 
@@ -32,6 +32,7 @@ export async function DELETE(
 
   return NextResponse.json({ success: true });
 }
+
 
 
 

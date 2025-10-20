@@ -101,7 +101,7 @@ export default function OmOssPage() {
         <section className={styles.section}>
           <Card variant="highlighted" padding="lg">
             <div className={styles.policy}>
-              <h2 className={styles.policyTitle}>Vår "Anti-Prestige" Policy</h2>
+              <h2 className={styles.policyTitle}>Vår &quot;Anti-Prestige&quot; Policy</h2>
               <div className={styles.policyContent}>
                 <p className={styles.policyText}>
                   Kraftverk Studio har nolltolerans mot gym-skräck, nedvärderande beteende eller
