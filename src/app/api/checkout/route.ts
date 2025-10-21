@@ -32,6 +32,13 @@ export async function POST(request: NextRequest) {
     const priceId = getStripePriceId(productType);
     const productName = getProductDisplayName(productType);
 
+    // Check if price ID is a placeholder
+    if (priceId.startsWith('price_PLACEHOLDER_')) {
+      return NextResponse.json({ 
+        error: "Stripe products not configured. Please run: node scripts/setup-stripe-products.js" 
+      }, { status: 500 });
+    }
+
     // Get origin for redirect URLs
     const origin = request.headers.get("origin") || 
                    (process.env.NODE_ENV === "development" 
