@@ -4,6 +4,7 @@ import React from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
+import { analytics } from "@/lib/analytics";
 import type { ClassInstance } from "@/types";
 import styles from "./ClassCard.module.css";
 
@@ -17,6 +18,15 @@ export default function ClassCard({ classInstance, onBook, loading = false }: Cl
   const { template, trainer, startTime, spots, bookedSpots = 0 } = classInstance;
   const spotsLeft = spots - bookedSpots;
   const isFull = spotsLeft <= 0;
+
+  const handleBookingClick = () => {
+    analytics.trackClassBooking(
+      template?.title || 'Unknown Class',
+      trainer?.name || 'Unknown Instructor',
+      formatTime(startTime)
+    );
+    onBook();
+  };
 
   const getIntensityZone = (intensity: string) => {
     switch (intensity) {
@@ -104,7 +114,18 @@ export default function ClassCard({ classInstance, onBook, loading = false }: Cl
               <span className={styles.spotsText}>{spotsLeft} platser kvar</span>
             )}
           </div>
-          <Button size="sm" onClick={onBook} disabled={isFull || loading}>
+          <Button 
+            size="sm" 
+            onClick={handleBookingClick} 
+            disabled={isFull || loading}
+            analyticsEvent="class_booking"
+            analyticsData={{ 
+              className: template?.title,
+              instructor: trainer?.name,
+              intensity: template?.intensity,
+              category: template?.category
+            }}
+          >
             {loading ? "Bearbetar..." : (isFull ? "Ställ i kö" : "Boka")}
           </Button>
         </div>

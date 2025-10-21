@@ -2,6 +2,7 @@
 
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
+import { analytics } from "@/lib/analytics";
 import type { User, Membership } from "@/types";
 
 type AuthState = {
@@ -34,6 +35,9 @@ export const useAuthStore = create<AuthState>()(
         const memberships = await membershipsResponse.json();
         const userMembership = memberships.find((m: Membership) => m.id === membershipId);
 
+        // Track login
+        analytics.trackAuth('login');
+
         set({
           user: { ...mockUser, membership: userMembership },
           membership: userMembership,
@@ -42,6 +46,9 @@ export const useAuthStore = create<AuthState>()(
       },
 
       logout: () => {
+        // Track logout
+        analytics.trackAuth('logout');
+        
         set({
           user: null,
           membership: null,

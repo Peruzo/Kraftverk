@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripePriceId, getProductDisplayName } from "@/lib/stripe-config";
+import { analytics } from "@/lib/analytics";
 
 function getStripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -22,6 +23,9 @@ export async function POST(request: NextRequest) {
         error: "membershipId or classInstanceId required" 
       }, { status: 400 });
     }
+
+    // Track checkout initiation
+    analytics.trackCheckout('initiated');
 
     // Determine product type and get corresponding Stripe price
     const productType = membershipId || "class-booking";
@@ -64,6 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error) {
     console.error("Stripe checkout error:", error);
+    analytics.trackCheckout('failed');
     return NextResponse.json({ 
       error: "Payment initialization failed" 
     }, { status: 500 });
