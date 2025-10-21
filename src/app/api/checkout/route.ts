@@ -43,6 +43,11 @@ export async function POST(request: NextRequest) {
 
     // Create Stripe checkout session
     const stripe = getStripeClient();
+    
+    // Determine if this is a subscription (membership) or one-time payment (class booking)
+    const isSubscription = membershipId && membershipId !== "dagpass";
+    const mode = isSubscription ? "subscription" : "payment";
+    
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -51,7 +56,7 @@ export async function POST(request: NextRequest) {
           quantity: 1,
         },
       ],
-      mode: "payment",
+      mode: mode,
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
       metadata: {
