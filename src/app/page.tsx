@@ -1,33 +1,14 @@
 import React from "react";
-import Link from "next/link";
-import Button from "@/components/ui/Button";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import ParallaxHero from "@/components/effects/ParallaxHero";
-import { analytics } from "@/lib/analytics";
+import HeroButtons from "@/components/home/HeroButtons";
+import UpgradeButton from "@/components/home/UpgradeButton";
+import AppDownloadButton from "@/components/home/AppDownloadButton";
+import StudioPlusButton from "@/components/home/StudioPlusButton";
 import styles from "./page.module.css";
 
 export default function HomePage() {
-  const handleMembershipClick = () => {
-    analytics.trackCTAClick('membership', 'Bli medlem', 'hero');
-  };
-
-  const handleDayPassClick = () => {
-    analytics.trackCTAClick('day_pass', 'Prova dagpass', 'hero');
-  };
-
-  const handleUpgradeClick = () => {
-    analytics.trackCTAClick('upgrade', 'Uppgradera till Studio+', 'training_quests');
-  };
-
-  const handleAppDownloadClick = () => {
-    analytics.trackCTAClick('app_download', 'Ladda ner appen', 'app_teaser');
-  };
-
-  const handleStudioPlusClick = () => {
-    analytics.trackCTAClick('studio_plus', 'Läs mer om Studio+', 'recovery');
-  };
-
   return (
     <div className={styles.home}>
       {/* Hero with Background Image */}
@@ -55,27 +36,7 @@ export default function HomePage() {
               Noll prestige, 100% progression.
             </p>
             <div className={styles.heroCta}>
-              <Link href="/medlemskap">
-                <Button 
-                  size="lg" 
-                  onClick={handleMembershipClick}
-                  analyticsEvent="membership"
-                  analyticsData={{ location: 'hero' }}
-                >
-                  Bli medlem
-                </Button>
-              </Link>
-              <Link href="/medlemskap#dagpass">
-                <Button 
-                  size="lg" 
-                  variant="secondary"
-                  onClick={handleDayPassClick}
-                  analyticsEvent="day_pass"
-                  analyticsData={{ location: 'hero' }}
-                >
-                  Prova dagpass
-                </Button>
-              </Link>
+              <HeroButtons />
             </div>
           </div>
         </div>
@@ -180,16 +141,7 @@ export default function HomePage() {
             <p className={styles.questCtaText}>
               Träningsuppdrag tillgängliga för Studio+ medlemmar
             </p>
-            <Link href="/medlemskap">
-              <Button 
-                variant="secondary"
-                onClick={handleUpgradeClick}
-                analyticsEvent="upgrade"
-                analyticsData={{ location: 'training_quests' }}
-              >
-                Uppgradera till Studio+
-              </Button>
-            </Link>
+            <UpgradeButton />
           </div>
         </div>
       </section>
@@ -311,14 +263,7 @@ export default function HomePage() {
                 </ul>
               </div>
               <div className={styles.appCta}>
-                <Button 
-                  size="lg"
-                  onClick={handleAppDownloadClick}
-                  analyticsEvent="app_download"
-                  analyticsData={{ location: 'app_teaser' }}
-                >
-                  Ladda ner appen
-                </Button>
+                <AppDownloadButton />
                 <p className={styles.appNote}>iOS & Android</p>
               </div>
             </div>
@@ -335,16 +280,7 @@ export default function HomePage() {
               Studio+ medlemmar får tillgång till vår recovery-zon med IR-bastu, kalla bad och
               massage. Boka recovery-slots precis som klasser.
             </p>
-            <Link href="/medlemskap">
-              <Button 
-                variant="secondary"
-                onClick={handleStudioPlusClick}
-                analyticsEvent="studio_plus"
-                analyticsData={{ location: 'recovery' }}
-              >
-                Läs mer om Studio+
-              </Button>
-            </Link>
+            <StudioPlusButton />
           </div>
         </div>
       </section>
