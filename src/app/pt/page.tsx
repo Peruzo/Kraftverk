@@ -1,6 +1,7 @@
 import React from "react";
 import TrainerCard from "@/components/pt/TrainerCard";
-import Button from "@/components/ui/Button";
+import PTBookingButton from "@/components/pt/PTBookingButton";
+import PTConsultationButton from "@/components/pt/PTConsultationButton";
 import Card from "@/components/ui/Card";
 import trainers from "@/data/trainers.json";
 import styles from "./page.module.css";
@@ -75,9 +76,7 @@ export default function PTPage() {
                   <p className={styles.packageSessions}>{pkg.sessions} session{pkg.sessions > 1 ? 'er' : ''}</p>
                   <p className={styles.packageDesc}>{pkg.description}</p>
                   <div className={styles.packageCta}>
-                    <Button fullWidth variant={pkg.popular ? "primary" : "secondary"}>
-                      Boka {pkg.name}
-                    </Button>
+                    <PTBookingButton pkg={pkg} />
                   </div>
                 </div>
               </Card>
@@ -165,7 +164,7 @@ export default function PTPage() {
           <p className={styles.ctaText}>
             Boka en kostnadsfri konsultation så hjälper vi dig hitta rätt paket och instruktör.
           </p>
-          <Button size="lg">Boka kostnadsfri konsultation</Button>
+          <PTConsultationButton />
         </section>
       </div>
     </div>
