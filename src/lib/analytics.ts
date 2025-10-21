@@ -143,6 +143,11 @@ class AnalyticsService {
       seconds,
     });
   }
+
+  // Send custom event to customer portal
+  sendEvent(eventName: string, data: Record<string, any>) {
+    this.sendEvent(eventName, data);
+  }
 }
 
 // Export singleton instance

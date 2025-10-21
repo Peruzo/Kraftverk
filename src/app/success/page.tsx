@@ -3,6 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
+import { analytics } from "@/lib/analytics";
 
 function SuccessPageContent() {
   const searchParams = useSearchParams();
@@ -22,6 +23,20 @@ function SuccessPageContent() {
         // For demo purposes, we'll consider any session ID as successful
         // In production, you would verify the payment with Stripe API
         setPaymentStatus("success");
+        
+        // Track successful payment completion
+        analytics.trackCheckout('completed', 399, 'SEK');
+        analytics.trackMembershipAction('payment_completed', 'base');
+        
+        // Send customer data to portal
+        analytics.sendEvent('customer_payment', {
+          sessionId,
+          amount: 399,
+          currency: 'SEK',
+          productType: 'base_membership',
+          status: 'completed',
+          timestamp: new Date().toISOString()
+        });
       } catch (error) {
         console.error("Payment verification failed:", error);
         setPaymentStatus("error");

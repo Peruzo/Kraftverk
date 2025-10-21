@@ -24,13 +24,16 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Track checkout initiation
-    analytics.trackCheckout('initiated');
-
     // Determine product type and get corresponding Stripe price
     const productType = membershipId || "class-booking";
     const priceId = getStripePriceId(productType);
     const productName = getProductDisplayName(productType);
+
+    // Track checkout initiation
+    analytics.trackCheckout('initiated');
+    
+    // Track membership action for customer portal
+    analytics.trackMembershipAction('checkout_initiated', productType);
 
     // Get origin for redirect URLs
     const origin = request.headers.get("origin") || 
