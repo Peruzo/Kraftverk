@@ -145,7 +145,7 @@ class AnalyticsService {
   }
 
   // Send custom event to customer portal
-  sendEvent(eventName: string, data: Record<string, any>) {
+  sendCustomEvent(eventName: string, data: Record<string, any>) {
     this.sendEvent(eventName, data);
   }
 }

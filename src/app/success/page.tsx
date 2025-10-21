@@ -29,7 +29,7 @@ function SuccessPageContent() {
         analytics.trackMembershipAction('payment_completed', 'base');
         
         // Send customer data to portal
-        analytics.sendEvent('customer_payment', {
+        analytics.sendCustomEvent('customer_payment', {
           sessionId,
           amount: 399,
           currency: 'SEK',
