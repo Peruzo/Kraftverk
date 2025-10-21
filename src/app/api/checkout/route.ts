@@ -63,6 +63,9 @@ export async function POST(request: NextRequest) {
           message: `Tack för att du väljer ${productName}!`,
         },
       },
+    }, {
+      // Use the connected account where the price was created
+      stripeAccount: process.env.STRIPE_CONNECT_ACCOUNT_ID || "acct_1SKMZ0P9UcprUpsC",
     });
 
     return NextResponse.json({ url: session.url }, { status: 200 });
