@@ -1,14 +1,14 @@
 // Stripe configuration and price mapping for KraftverkStudio
 
 export const STRIPE_PRICE_MAPPING = {
-  // Membership prices - Using main account price ID
+  // Membership prices - Using main account price IDs
   "base": "price_1SKhYSP6vvUUervCTpvpt0QO", // 399 SEK/month
-  "flex": "price_1SKhYSP6vvUUervCTpvpt0QO", // 599 SEK/month (using same price for now)
-  "studio-plus": "price_1SKhYSP6vvUUervCTpvpt0QO", // 899 SEK/month (using same price for now)
-  "dagpass": "price_1SKhYSP6vvUUervCTpvpt0QO", // 99 SEK one-time (using same price for now)
+  "flex": "price_1SKwUeP6vvUUervCMqO3Xv7v", // 599 SEK/month
+  "studio-plus": "price_1SKhYSP6vvUUervCTpvpt0QO", // 899 SEK/month (using base price for now)
+  "dagpass": "price_1SKhYSP6vvUUervCTpvpt0QO", // 99 SEK one-time (using base price for now)
   
   // Class booking prices
-  "class-booking": "price_1SKhYSP6vvUUervCTpvpt0QO", // 99 SEK one-time (using same price for now)
+  "class-booking": "price_1SKhYSP6vvUUervCTpvpt0QO", // 99 SEK one-time (using base price for now)
 } as const;
 
 export type ProductType = keyof typeof STRIPE_PRICE_MAPPING;
