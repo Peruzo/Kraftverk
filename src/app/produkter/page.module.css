@@ -1,0 +1,118 @@
+.page {
+  min-height: 100vh;
+}
+
+.hero {
+  background: linear-gradient(135deg, var(--bg-primary) 0%, var(--bg-secondary) 100%);
+  padding: 4rem 0;
+  text-align: center;
+}
+
+.heroContent {
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.heroTitle {
+  font-size: 3rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+  line-height: 1.2;
+}
+
+.heroSubtitle {
+  font-size: 1.2rem;
+  color: var(--text-secondary);
+  margin: 0;
+  line-height: 1.5;
+}
+
+.productsSection {
+  padding: 4rem 0;
+}
+
+.productsGrid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 2rem;
+  max-width: 1200px;
+  margin: 0 auto;
+}
+
+.ctaSection {
+  background: var(--bg-secondary);
+  padding: 3rem 0;
+  text-align: center;
+}
+
+.ctaContent {
+  max-width: 500px;
+  margin: 0 auto;
+}
+
+.ctaTitle {
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--text-primary);
+  margin: 0 0 1rem 0;
+}
+
+.ctaText {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 0 0 2rem 0;
+  line-height: 1.5;
+}
+
+.ctaButtons {
+  display: flex;
+  gap: 1rem;
+  justify-content: center;
+}
+
+.contactButton {
+  display: inline-block;
+  padding: 0.75rem 1.5rem;
+  background: var(--accent-primary);
+  color: white;
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 500;
+  transition: background-color 0.3s ease;
+}
+
+.contactButton:hover {
+  background: var(--accent-primary-hover);
+}
+
+@media (max-width: 768px) {
+  .hero {
+    padding: 3rem 0;
+  }
+  
+  .heroTitle {
+    font-size: 2.5rem;
+  }
+  
+  .heroSubtitle {
+    font-size: 1.1rem;
+  }
+  
+  .productsSection {
+    padding: 3rem 0;
+  }
+  
+  .productsGrid {
+    grid-template-columns: 1fr;
+    gap: 1.5rem;
+  }
+  
+  .ctaSection {
+    padding: 2rem 0;
+  }
+  
+  .ctaTitle {
+    font-size: 1.5rem;
+  }
+}

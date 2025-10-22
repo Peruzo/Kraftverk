@@ -1,0 +1,42 @@
+[
+  {
+    "id": "gym-shirt",
+    "name": "Kraftverk Gym Shirt",
+    "price": 299,
+    "description": "Premium träningsshirt med Kraftverk-logotyp. Mjuk och andas bra material.",
+    "image": "https://images.unsplash.com/photo-1521572163474-6864f9cf17ab?q=80&w=800",
+    "stripeProductId": "TODO_SHIRT_PRICE_ID"
+  },
+  {
+    "id": "gym-hoodie",
+    "name": "Kraftverk Gym Hoodie",
+    "price": 599,
+    "description": "Varm och bekväm hoodie med Kraftverk-märkning. Perfekt för träning och vardag.",
+    "image": "https://images.unsplash.com/photo-1556821840-3a63f95609a7?q=80&w=800",
+    "stripeProductId": "TODO_HOODIE_PRICE_ID"
+  },
+  {
+    "id": "gym-bottle",
+    "name": "Kraftverk Gym Bottle",
+    "price": 149,
+    "description": "Hållbar vattenflaska med Kraftverk-design. 750ml kapacitet.",
+    "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?q=80&w=800",
+    "stripeProductId": "TODO_BOTTLE_PRICE_ID"
+  },
+  {
+    "id": "keychain",
+    "name": "Kraftverk Keychain",
+    "price": 39,
+    "description": "Elegant nyckelring med Kraftverk-logotyp. Perfekt som souvenir.",
+    "image": "https://images.unsplash.com/photo-1602143407151-7111542de6e8?q=80&w=800",
+    "stripeProductId": "TODO_KEYCHAIN_PRICE_ID"
+  },
+  {
+    "id": "gym-bag",
+    "name": "Kraftverk Gym Bag",
+    "price": 499,
+    "description": "Rymlig träningsväska med Kraftverk-märkning. Perfekt för gym och resor.",
+    "image": "https://images.unsplash.com/photo-1553062407-98eeb64c6a62?q=80&w=800",
+    "stripeProductId": "TODO_BAG_PRICE_ID"
+  }
+]

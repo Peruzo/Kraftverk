@@ -2,6 +2,7 @@
 
 import React from "react";
 import PricingCard from "@/components/membership/PricingCard";
+import ProductsButton from "@/components/products/ProductsButton";
 import memberships from "@/data/memberships.json";
 import styles from "./page.module.css";
 
@@ -81,6 +82,13 @@ export default function MedlemskapPage() {
                 membership={dagpass}
                 onSelect={(campaignId) => handleMembershipSelect(dagpass, campaignId)}
               />
+            </div>
+            <div className={styles.productsSection}>
+              <h3 className={styles.productsTitle}>Eller kolla in våra produkter</h3>
+              <p className={styles.productsSubtitle}>
+                Upptäck vårt utbud av premium träningsprodukter med Kraftverk-märkning.
+              </p>
+              <ProductsButton />
             </div>
           </div>
         )}

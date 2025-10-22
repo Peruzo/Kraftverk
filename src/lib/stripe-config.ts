@@ -9,6 +9,13 @@ export const STRIPE_PRICE_MAPPING = {
   
   // Class booking prices
   "class-booking": "price_1SKhYSP6vvUUervCTpvpt0QO", // 99 SEK one-time (using base price for now)
+  
+  // Product prices - TODO: Replace with real price IDs from Stripe dashboard
+  "gym-shirt": "TODO_SHIRT_PRICE_ID", // 299 SEK one-time
+  "gym-hoodie": "TODO_HOODIE_PRICE_ID", // 599 SEK one-time
+  "gym-bottle": "TODO_BOTTLE_PRICE_ID", // 149 SEK one-time
+  "keychain": "TODO_KEYCHAIN_PRICE_ID", // 39 SEK one-time
+  "gym-bag": "TODO_BAG_PRICE_ID", // 499 SEK one-time
 } as const;
 
 export type ProductType = keyof typeof STRIPE_PRICE_MAPPING;

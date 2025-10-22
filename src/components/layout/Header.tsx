@@ -16,6 +16,7 @@ export default function Header() {
     { href: "/medlemskap", label: "Medlemskap" },
     { href: "/schema", label: "Schema" },
     { href: "/pt", label: "PT & Coaching" },
+    { href: "/produkter", label: "Produkter" },
     { href: "/om-oss", label: "Om oss" },
   ];
 

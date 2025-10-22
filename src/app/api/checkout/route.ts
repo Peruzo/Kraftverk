@@ -16,24 +16,28 @@ function getStripeClient() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { membershipId, classInstanceId, userId, campaignId } = body;
+    const { membershipId, classInstanceId, productId, userId, campaignId } = body;
 
-    if (!membershipId && !classInstanceId) {
+    if (!membershipId && !classInstanceId && !productId) {
       return NextResponse.json({ 
-        error: "membershipId or classInstanceId required" 
+        error: "membershipId, classInstanceId, or productId required" 
       }, { status: 400 });
     }
 
     // Determine product type and get corresponding Stripe price
-    const productType = membershipId || "class-booking";
+    const productType = membershipId || classInstanceId || productId || "class-booking";
     const priceId = getStripePriceId(productType);
     const productName = getProductDisplayName(productType);
 
     // Track checkout initiation
     analytics.trackCheckout('initiated');
     
-    // Track membership action for customer portal
-    analytics.trackMembershipAction('checkout_initiated', productType);
+    // Track action for customer portal
+    if (productId) {
+      analytics.trackMembershipAction('product_checkout_initiated', productType);
+    } else {
+      analytics.trackMembershipAction('checkout_initiated', productType);
+    }
 
     // Get origin for redirect URLs
     const origin = request.headers.get("origin") || 
@@ -73,8 +77,8 @@ export async function POST(request: NextRequest) {
     // Create Stripe checkout session
     const stripe = getStripeClient();
     
-    // Determine if this is a subscription (membership) or one-time payment (class booking)
-    const isSubscription = membershipId && membershipId !== "dagpass";
+    // Determine if this is a subscription (membership) or one-time payment (class booking/products)
+    const isSubscription = membershipId && membershipId !== "dagpass" && !productId;
     const mode = isSubscription ? "subscription" : "payment";
     
     const session = await stripe.checkout.sessions.create({
@@ -92,6 +96,7 @@ export async function POST(request: NextRequest) {
       metadata: {
         membershipId: membershipId || "",
         classInstanceId: classInstanceId || "",
+        productId: productId || "",
         userId: userId || "",
         productType: productType,
         campaignId: campaignId || "",

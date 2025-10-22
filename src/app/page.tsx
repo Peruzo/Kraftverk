@@ -7,6 +7,7 @@ import HeroButtons from "@/components/home/HeroButtons";
 import UpgradeButton from "@/components/home/UpgradeButton";
 import AppDownloadButton from "@/components/home/AppDownloadButton";
 import StudioPlusButton from "@/components/home/StudioPlusButton";
+import ProductsButton from "@/components/products/ProductsButton";
 import styles from "./page.module.css";
 
 export default function HomePage() {
@@ -282,6 +283,19 @@ export default function HomePage() {
               massage. Boka recovery-slots precis som klasser.
             </p>
             <StudioPlusButton />
+          </div>
+        </div>
+      </section>
+
+      {/* Products Section */}
+      <section className={styles.section}>
+        <div className="container">
+          <div className={styles.productsTeaser}>
+            <h2 className={styles.sectionTitle}>Kraftverk Produkter</h2>
+            <p className={styles.sectionSubtitle}>
+              Upptäck vårt utbud av premium träningsprodukter med Kraftverk-märkning.
+            </p>
+            <ProductsButton />
           </div>
         </div>
       </section>
