@@ -9,7 +9,7 @@ export default function MedlemskapPage() {
   const regularMemberships = memberships.filter((m) => m.id !== "dagpass");
   const dagpass = memberships.find((m) => m.id === "dagpass");
 
-  const handleMembershipSelect = async (membership: any) => {
+  const handleMembershipSelect = async (membership: any, campaignId?: string) => {
     try {
       const response = await fetch("/api/checkout", {
         method: "POST",
@@ -19,6 +19,7 @@ export default function MedlemskapPage() {
         body: JSON.stringify({
           membershipId: membership.id,
           userId: "demo-user", // Replace with actual user ID later
+          campaignId: campaignId, // Pass campaign ID if available
         }),
       });
 
@@ -66,7 +67,7 @@ export default function MedlemskapPage() {
             <PricingCard 
               key={membership.id} 
               membership={membership}
-              onSelect={() => handleMembershipSelect(membership)}
+              onSelect={(campaignId) => handleMembershipSelect(membership, campaignId)}
             />
           ))}
         </div>
@@ -78,7 +79,7 @@ export default function MedlemskapPage() {
             <div className={styles.dagpassCard}>
               <PricingCard 
                 membership={dagpass}
-                onSelect={() => handleMembershipSelect(dagpass)}
+                onSelect={(campaignId) => handleMembershipSelect(dagpass, campaignId)}
               />
             </div>
           </div>

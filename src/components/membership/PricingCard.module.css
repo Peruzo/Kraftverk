@@ -25,6 +25,12 @@
   right: var(--space-6);
 }
 
+.campaignBadge {
+  position: absolute;
+  top: -12px;
+  left: var(--space-6);
+}
+
 .header {
   margin-bottom: var(--space-6);
   padding-bottom: var(--space-6);
@@ -48,6 +54,14 @@
   font-size: var(--text-4xl);
   font-weight: 700;
   color: var(--color-accent);
+}
+
+.originalPrice {
+  font-size: var(--text-2xl);
+  font-weight: 600;
+  color: var(--color-muted);
+  text-decoration: line-through;
+  margin-right: var(--space-2);
 }
 
 .currency {

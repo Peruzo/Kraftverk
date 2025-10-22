@@ -3,7 +3,7 @@ import styles from "./Badge.module.css";
 
 type BadgeProps = {
   children: React.ReactNode;
-  variant?: "default" | "success" | "warning" | "error" | "zone";
+  variant?: "default" | "success" | "warning" | "error" | "accent" | "zone";
   zone?: "grey" | "blue" | "green" | "orange" | "red";
   className?: string;
 };

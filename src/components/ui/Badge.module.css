@@ -31,6 +31,11 @@
   color: var(--color-error);
 }
 
+.accent {
+  background: rgba(34, 211, 238, 0.15);
+  color: var(--color-accent);
+}
+
 /* Zone colors */
 .zone-grey {
   background: rgba(107, 114, 128, 0.2);

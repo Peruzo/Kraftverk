@@ -16,7 +16,7 @@ function getStripeClient() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { membershipId, classInstanceId, userId } = body;
+    const { membershipId, classInstanceId, userId, campaignId } = body;
 
     if (!membershipId && !classInstanceId) {
       return NextResponse.json({ 
@@ -41,6 +41,35 @@ export async function POST(request: NextRequest) {
                      ? "http://localhost:3000" 
                      : process.env.NEXT_PUBLIC_APP_URL);
 
+    // Fetch campaign discount if campaignId provided
+    let campaignDiscount = undefined;
+    if (campaignId) {
+      try {
+        const campaignResponse = await fetch(
+          `${origin}/api/campaigns/webhook`,
+          { method: 'GET' }
+        );
+        const { campaigns } = await campaignResponse.json();
+        const campaign = campaigns.find((c: any) => c.id === campaignId);
+        
+        if (campaign && campaign.stripeCouponId) {
+          campaignDiscount = [{ coupon: campaign.stripeCouponId }];
+          
+          // Track campaign applied
+          analytics.sendCustomEvent('campaign_applied', {
+            campaignId: campaign.id,
+            campaignName: campaign.name,
+            productType: productType,
+          });
+          
+          console.log(`✅ Campaign applied: ${campaign.name}`);
+        }
+      } catch (error) {
+        console.error('Failed to fetch campaign:', error);
+        // Continue checkout without campaign discount
+      }
+    }
+
     // Create Stripe checkout session
     const stripe = getStripeClient();
     
@@ -57,6 +86,7 @@ export async function POST(request: NextRequest) {
         },
       ],
       mode: mode,
+      discounts: campaignDiscount,
       success_url: `${origin}/success?session_id={CHECKOUT_SESSION_ID}`,
       cancel_url: `${origin}/checkout`,
       metadata: {
@@ -64,6 +94,7 @@ export async function POST(request: NextRequest) {
         classInstanceId: classInstanceId || "",
         userId: userId || "",
         productType: productType,
+        campaignId: campaignId || "",
       },
       customer_email: userId ? `${userId}@example.com` : undefined,
       custom_text: {
