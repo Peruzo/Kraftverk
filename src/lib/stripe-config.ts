@@ -4,7 +4,7 @@ export const STRIPE_PRICE_MAPPING = {
   // Membership prices - Using main account price IDs
   "base": "price_1SKhYSP6vvUUervCTpvpt0QO", // 399 SEK/month
   "flex": "price_1SKwUeP6vvUUervCMqO3Xv7v", // 599 SEK/month
-  "studio-plus": "price_1SKhYSP6vvUUervCTpvpt0QO", // 899 SEK/month (using base price for now)
+  "studio-plus": "price_1SL2xzP6vvUUervCtqpdm124", // 899 SEK/month
   "dagpass": "price_1SKwweP6vvUUervCxH3vVYhG", // 149 SEK one-time
   
   // Class booking prices
