@@ -22,10 +22,10 @@ function SuccessPageContent() {
       try {
         // Get real payment data from server-side API
         const response = await fetch(`/api/verify-payment?session_id=${sessionId}`);
-        const paymentData = await response.json();
+        const apiResponse = await response.json();
         
         if (!response.ok) {
-          throw new Error(paymentData.error || 'Payment verification failed');
+          throw new Error(apiResponse.error || 'Payment verification failed');
         }
         
         // Extract payment data
@@ -48,7 +48,7 @@ function SuccessPageContent() {
           paymentMethod,
           customerId,
           timestamp
-        } = paymentData;
+        } = apiResponse;
         
         // For demo purposes, we'll consider any session ID as successful
         // In production, you would verify the payment with Stripe API
