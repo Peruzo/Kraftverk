@@ -49,6 +49,10 @@ class AnalyticsService {
           width: window.innerWidth,
           height: window.innerHeight,
         },
+        // Add unique analytics ID for server-side deduplication
+        analyticsId: event === 'customer_payment' && data.sessionId 
+          ? `${data.sessionId}_${Date.now()}` 
+          : undefined,
       },
       domain: this.domain,
       tenant: TENANT,
@@ -153,6 +157,17 @@ class AnalyticsService {
 
   // Send custom event to customer portal
   sendCustomEvent(eventName: string, data: Record<string, any>) {
+    // Add deduplication for customer_payment events
+    if (eventName === 'customer_payment' && data.sessionId) {
+      const analyticsKey = `analytics_sent_${data.sessionId}`;
+      const alreadySent = localStorage.getItem(analyticsKey);
+      
+      if (alreadySent) {
+        console.log('⚠️ Analytics already sent for session:', data.sessionId, '- skipping duplicate');
+        return;
+      }
+    }
+    
     this.sendEvent(eventName, data);
   }
 }

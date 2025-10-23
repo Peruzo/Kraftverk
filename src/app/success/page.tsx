@@ -84,32 +84,21 @@ function SuccessPageContent() {
 
         console.log('🚀 Sending payment data to analytics:', paymentData);
         
-        // Send via analytics service
-        analytics.sendCustomEvent('customer_payment', paymentData);
+        // Check if analytics already sent for this session (prevent duplicates)
+        const analyticsKey = `analytics_sent_${sessionId}`;
+        const alreadySent = localStorage.getItem(analyticsKey);
         
-        // Direct fallback to ensure data reaches your endpoint
-        try {
-          const directResponse = await fetch('https://source-database.onrender.com/api/analytics/track', {
-            method: 'POST',
-            headers: {
-              'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-              event: 'customer_payment',
-              data: paymentData,
-              domain: 'kraftverk.com',
-              tenant: 'kraftverk'
-            }),
-          });
+        if (!alreadySent) {
+          console.log('📤 Sending analytics for session:', sessionId);
           
-          if (directResponse.ok) {
-            const result = await directResponse.json();
-            console.log('✅ Direct payment data sent successfully:', result);
-          } else {
-            console.error('❌ Direct payment data failed:', directResponse.status);
-          }
-        } catch (directError) {
-          console.error('❌ Direct payment data error:', directError);
+          // Send via analytics service
+          analytics.sendCustomEvent('customer_payment', paymentData);
+          
+          // Mark as sent to prevent duplicates
+          localStorage.setItem(analyticsKey, 'true');
+          console.log('✅ Analytics sent and marked as sent for session:', sessionId);
+        } else {
+          console.log('⚠️ Analytics already sent for session:', sessionId, '- skipping duplicate');
         }
       } catch (error) {
         console.error("Payment verification failed:", error);
