@@ -12,6 +12,16 @@ export default function ProductsPage() {
     setLoading(product.id);
     
     try {
+      // Get customer data from auth store or prompt for email
+      const customerEmail = prompt("Ange din e-postadress för att fortsätta:");
+      if (!customerEmail) {
+        alert("E-postadress krävs för att fortsätta.");
+        setLoading(null);
+        return;
+      }
+      
+      const customerName = prompt("Ange ditt namn (valfritt):") || undefined;
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
@@ -20,6 +30,8 @@ export default function ProductsPage() {
         body: JSON.stringify({
           productId: product.id,
           userId: "demo-user", // Replace with actual user ID later
+          customerEmail: customerEmail,
+          customerName: customerName,
         }),
       });
 

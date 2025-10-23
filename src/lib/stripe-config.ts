@@ -16,6 +16,11 @@ export const STRIPE_PRICE_MAPPING = {
   "gym-bottle": "price_1SL5D4P6vvUUervCoRbUt0GS", // 149 SEK one-time
   "keychain": "price_1SL5DMP6vvUUervCUFG0B0Ei", // 39 SEK one-time
   "gym-bag": "price_1SL5DhP6vvUUervCpwAMofHP", // 499 SEK one-time
+
+  // PT Packages (using existing prices for now)
+  "pt-starter": "price_1SKhYSP6vvUUervCTpvpt0QO", // 2999 SEK one-time (using base price)
+  "pt-progress": "price_1SKwUeP6vvUUervCMqO3Xv7v", // 4999 SEK one-time (using flex price)
+  "pt-transform": "price_1SL2xzP6vvUUervCtqpdm124", // 8999 SEK one-time (using studio+ price)
 } as const;
 
 export type ProductType = keyof typeof STRIPE_PRICE_MAPPING;

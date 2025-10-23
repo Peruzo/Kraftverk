@@ -12,6 +12,15 @@ export default function MedlemskapPage() {
 
   const handleMembershipSelect = async (membership: any, campaignId?: string) => {
     try {
+      // Get customer data from auth store or prompt for email
+      const customerEmail = prompt("Ange din e-postadress för att fortsätta:");
+      if (!customerEmail) {
+        alert("E-postadress krävs för att fortsätta.");
+        return;
+      }
+      
+      const customerName = prompt("Ange ditt namn (valfritt):") || undefined;
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
@@ -21,6 +30,8 @@ export default function MedlemskapPage() {
           membershipId: membership.id,
           userId: "demo-user", // Replace with actual user ID later
           campaignId: campaignId, // Pass campaign ID if available
+          customerEmail: customerEmail,
+          customerName: customerName,
         }),
       });
 

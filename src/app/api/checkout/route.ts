@@ -16,7 +16,15 @@ function getStripeClient() {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const { membershipId, classInstanceId, productId, userId, campaignId } = body;
+    const { 
+      membershipId, 
+      classInstanceId, 
+      productId, 
+      userId, 
+      campaignId,
+      customerEmail,
+      customerName 
+    } = body;
 
     if (!membershipId && !classInstanceId && !productId) {
       return NextResponse.json({ 
@@ -102,7 +110,11 @@ export async function POST(request: NextRequest) {
         productType: productType,
         campaignId: campaignId || "",
       },
-      customer_email: userId ? `${userId}@example.com` : undefined,
+      customer_email: customerEmail || undefined,
+      customer_details: customerEmail ? {
+        email: customerEmail,
+        name: customerName || undefined
+      } : undefined,
       custom_text: {
         submit: {
           message: `Tack för att du väljer ${productName}!`,
