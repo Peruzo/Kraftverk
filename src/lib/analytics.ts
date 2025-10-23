@@ -55,6 +55,9 @@ class AnalyticsService {
     };
 
     try {
+      console.log('📤 Sending analytics to:', `${CUSTOMER_PORTAL_URL}/api/analytics/track`);
+      console.log('📊 Payload:', JSON.stringify(payload, null, 2));
+      
       const response = await fetch(`${CUSTOMER_PORTAL_URL}/api/analytics/track`, {
         method: 'POST',
         headers: {
@@ -64,7 +67,11 @@ class AnalyticsService {
       });
 
       if (response.ok) {
-        console.log('📊 Analytics tracked:', event, data);
+        const result = await response.json();
+        console.log('✅ Analytics tracked successfully:', event, result);
+      } else {
+        const errorText = await response.text();
+        console.error('❌ Analytics failed:', response.status, errorText);
       }
     } catch (error) {
       console.error('❌ Analytics error:', error);

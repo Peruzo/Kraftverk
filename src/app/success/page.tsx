@@ -59,7 +59,7 @@ function SuccessPageContent() {
         analytics.trackMembershipAction('payment_completed', productType);
         
         // Send correct customer data to portal
-        analytics.sendCustomEvent('customer_payment', {
+        const paymentData = {
           sessionId,
           amount, // Real amount in cents
           currency,
@@ -80,7 +80,37 @@ function SuccessPageContent() {
           paymentMethod,
           customerId,
           timestamp
-        });
+        };
+
+        console.log('🚀 Sending payment data to analytics:', paymentData);
+        
+        // Send via analytics service
+        analytics.sendCustomEvent('customer_payment', paymentData);
+        
+        // Direct fallback to ensure data reaches your endpoint
+        try {
+          const directResponse = await fetch('https://source-database.onrender.com/api/analytics/track', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              event: 'customer_payment',
+              data: paymentData,
+              domain: 'kraftverk.com',
+              tenant: 'kraftverk'
+            }),
+          });
+          
+          if (directResponse.ok) {
+            const result = await directResponse.json();
+            console.log('✅ Direct payment data sent successfully:', result);
+          } else {
+            console.error('❌ Direct payment data failed:', directResponse.status);
+          }
+        } catch (directError) {
+          console.error('❌ Direct payment data error:', directError);
+        }
       } catch (error) {
         console.error("Payment verification failed:", error);
         setPaymentStatus("error");
