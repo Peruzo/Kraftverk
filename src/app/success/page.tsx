@@ -20,21 +20,86 @@ function SuccessPageContent() {
       }
 
       try {
+        // Get real payment data from Stripe session
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const session = await stripe.checkout.sessions.retrieve(sessionId);
+        
+        // Extract real customer and payment data
+        const customerEmail = session.customer_email;
+        const customerName = session.metadata?.customerName || '';
+        const productType = session.metadata?.productType || '';
+        const amount = session.amount_total; // Amount in cents
+        const currency = session.currency;
+        
         // For demo purposes, we'll consider any session ID as successful
         // In production, you would verify the payment with Stripe API
         setPaymentStatus("success");
         
-        // Track successful payment completion
-        analytics.trackCheckout('completed', 399, 'SEK');
-        analytics.trackMembershipAction('payment_completed', 'base');
+        // Track successful payment completion with real data
+        analytics.trackCheckout('completed', amount / 100, currency); // Convert cents to currency units
+        analytics.trackMembershipAction('payment_completed', productType);
+        const paymentIntent = session.payment_intent;
         
-        // Send customer data to portal
+        // Get payment method details
+        let cardBrand = '';
+        let cardLast4 = '';
+        let cardExpMonth = '';
+        let cardExpYear = '';
+        
+        if (paymentIntent) {
+          try {
+            const paymentIntentDetails = await stripe.paymentIntents.retrieve(paymentIntent);
+            const paymentMethod = paymentIntentDetails.payment_method;
+            if (paymentMethod && typeof paymentMethod === 'string') {
+              const pm = await stripe.paymentMethods.retrieve(paymentMethod);
+              if (pm.card) {
+                cardBrand = pm.card.brand || '';
+                cardLast4 = pm.card.last4 || '';
+                cardExpMonth = pm.card.exp_month?.toString() || '';
+                cardExpYear = pm.card.exp_year?.toString() || '';
+              }
+            }
+          } catch (error) {
+            console.error('Error fetching payment method details:', error);
+          }
+        }
+        
+        // Map product type to display name
+        const productNames: Record<string, string> = {
+          'gym-shirt': 'Kraftverk Gym Shirt',
+          'gym-hoodie': 'Kraftverk Gym Hoodie',
+          'gym-bottle': 'Kraftverk Gym Bottle',
+          'keychain': 'Kraftverk Keychain',
+          'gym-bag': 'Kraftverk Gym Bag',
+          'base': 'Base Medlemskap',
+          'flex': 'Flex Medlemskap',
+          'studio-plus': 'Studio+ Medlemskap',
+          'dagpass': 'Dagpass',
+        };
+        
+        const productName = productNames[productType] || productType;
+        
+        // Send correct customer data to portal
         analytics.sendCustomEvent('customer_payment', {
           sessionId,
-          amount: 399,
-          currency: 'SEK',
-          productType: 'base_membership',
+          amount, // Real amount in cents
+          currency,
           status: 'completed',
+          customerEmail, // Real customer email
+          customerName, // Real customer name
+          cardBrand,
+          cardLast4,
+          cardExpMonth,
+          cardExpYear,
+          productType, // Real product type
+          productName, // Real product name
+          priceId: session.metadata?.priceId || '',
+          productId: productType,
+          quantity: 1,
+          inventoryAction: 'purchase',
+          userId: session.metadata?.userId || '',
+          paymentMethod: 'card',
+          customerId: session.customer || '',
           timestamp: new Date().toISOString()
         });
       } catch (error) {
