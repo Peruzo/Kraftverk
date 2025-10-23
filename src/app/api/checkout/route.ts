@@ -109,12 +109,10 @@ export async function POST(request: NextRequest) {
         userId: userId || "",
         productType: productType,
         campaignId: campaignId || "",
+        customerEmail: customerEmail || "",
+        customerName: customerName || "",
       },
       customer_email: customerEmail || undefined,
-      customer_details: customerEmail ? {
-        email: customerEmail,
-        name: customerName || undefined
-      } : undefined,
       custom_text: {
         submit: {
           message: `Tack för att du väljer ${productName}!`,
