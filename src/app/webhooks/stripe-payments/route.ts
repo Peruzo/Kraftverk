@@ -159,11 +159,10 @@ async function sendCustomerDataToPortal(session: Stripe.Checkout.Session) {
     });
 
     // Send to customer portal webhook endpoint
-    const portalResponse = await fetch(`${process.env.CUSTOMER_PORTAL_URL}/webhooks/stripe-sync`, {
+    const portalResponse = await fetch("https://source-database.onrender.com/webhooks/kraftverk-customer-data", {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
-        "Authorization": `Bearer ${process.env.PORTAL_INBOUND_TOKEN}`,
       },
       body: JSON.stringify(customerData),
     });

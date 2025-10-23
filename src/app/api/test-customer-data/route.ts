@@ -21,37 +21,31 @@ export async function POST(request: NextRequest) {
 
     console.log("🧪 Test customer data:", customerData);
 
-    // Send to customer portal (if configured)
-    if (process.env.CUSTOMER_PORTAL_URL && process.env.PORTAL_INBOUND_TOKEN) {
-      const portalResponse = await fetch(`${process.env.CUSTOMER_PORTAL_URL}/webhooks/stripe-sync`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "Authorization": `Bearer ${process.env.PORTAL_INBOUND_TOKEN}`,
-        },
-        body: JSON.stringify(customerData),
-      });
+    // Send to customer portal
+    const portalResponse = await fetch("https://source-database.onrender.com/webhooks/kraftverk-customer-data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(customerData),
+    });
 
-      if (portalResponse.ok) {
-        console.log("✅ Test data sent to portal successfully");
-        return NextResponse.json({ 
-          success: true, 
-          message: "Customer data sent to portal",
-          data: customerData 
-        });
-      } else {
-        console.error("❌ Failed to send test data to portal:", await portalResponse.text());
-        return NextResponse.json({ 
-          success: false, 
-          message: "Failed to send to portal",
-          data: customerData 
-        });
-      }
-    } else {
-      console.log("⚠️ Portal environment variables not configured");
+    if (portalResponse.ok) {
+      const result = await portalResponse.json();
+      console.log("✅ Test data sent to portal successfully:", result);
       return NextResponse.json({ 
         success: true, 
-        message: "Portal not configured - data logged only",
+        message: "Customer data sent to portal",
+        portalResponse: result,
+        data: customerData 
+      });
+    } else {
+      const errorText = await portalResponse.text();
+      console.error("❌ Failed to send test data to portal:", errorText);
+      return NextResponse.json({ 
+        success: false, 
+        message: "Failed to send to portal",
+        error: errorText,
         data: customerData 
       });
     }
