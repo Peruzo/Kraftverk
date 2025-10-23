@@ -30,7 +30,7 @@ class AnalyticsService {
   private domain: string;
 
   constructor() {
-    this.domain = typeof window !== 'undefined' ? window.location.hostname : '';
+    this.domain = typeof window !== 'undefined' ? window.location.hostname : 'kraftverk.com';
   }
 
   private async sendEvent(event: string, data: TrackEventData = {}) {
