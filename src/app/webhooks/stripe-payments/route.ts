@@ -102,8 +102,17 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
 async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
   console.log(`❌ Payment failed: ${paymentIntent.id}`);
   
-  // Handle failed payment logic
-  // This could trigger retry mechanisms, notifications, etc.
+  // Get the checkout session to send refund inventory data
+  if (paymentIntent.metadata?.session_id) {
+    try {
+      const session = await stripe.checkout.sessions.retrieve(paymentIntent.metadata.session_id);
+      if (session.metadata?.tenant === "kraftverk") {
+        await sendRefundDataToPortal(session);
+      }
+    } catch (error) {
+      console.error("Error retrieving session for failed payment:", error);
+    }
+  }
 }
 
 async function handleInvoicePaymentSucceeded(invoice: Stripe.Invoice) {
@@ -128,7 +137,29 @@ async function sendCustomerDataToPortal(session: Stripe.Checkout.Session) {
     const productType = session.metadata?.productType || "";
     const userId = session.metadata?.userId || "";
     
-    // Prepare complete customer data for portal
+    // Get line items for inventory data
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+    const lineItem = lineItems.data[0]; // Get first item
+    const priceId = lineItem?.price?.id || "";
+    const quantity = lineItem?.quantity || 1;
+    
+    // Map price ID to product ID for inventory tracking
+    const productMapping: Record<string, string> = {
+      "price_1SL5CPP6vvUUervCs6aA8L23": "gym-shirt",
+      "price_1SL5CpP6vvUUervCS0hGh5i4": "gym-hoodie", 
+      "price_1SL5D4P6vvUUervCoRbUt0GS": "gym-bottle",
+      "price_1SL5DMP6vvUUervCUFG0B0Ei": "keychain",
+      "price_1SL5DhP6vvUUervCpwAMofHP": "gym-bag",
+      // Membership price IDs (for tracking purposes)
+      "price_1SKhYSP6vvUUervCTpvpt0QO": "base-membership",
+      "price_1SKwUeP6vvUUervCMqO3Xv7v": "flex-membership",
+      "price_1SL2xzP6vvUUervCtqpdm124": "studio-plus-membership",
+      "price_1SKwweP6vvUUervCxH3vVYhG": "dagpass",
+    };
+    
+    const productId = productMapping[priceId] || productType;
+    
+    // Prepare complete customer data for portal with inventory data
     const customerData = {
       tenant: "kraftverk",
       customerEmail,
@@ -141,6 +172,11 @@ async function sendCustomerDataToPortal(session: Stripe.Checkout.Session) {
       paymentMethod: session.payment_method_types?.[0] || "card",
       status: "completed",
       timestamp: new Date().toISOString(),
+      // Inventory tracking data
+      priceId,
+      productId,
+      quantity,
+      inventoryAction: "purchase",
       // Additional Stripe data
       paymentIntentId: session.payment_intent,
       customerId: session.customer,
@@ -156,6 +192,10 @@ async function sendCustomerDataToPortal(session: Stripe.Checkout.Session) {
       amount: customerData.amount,
       currency: customerData.currency,
       productType: customerData.productType,
+      priceId: customerData.priceId,
+      productId: customerData.productId,
+      quantity: customerData.quantity,
+      inventoryAction: customerData.inventoryAction,
     });
 
     // Send to customer portal webhook endpoint
@@ -175,6 +215,95 @@ async function sendCustomerDataToPortal(session: Stripe.Checkout.Session) {
 
   } catch (error) {
     console.error("Error sending customer data to portal:", error);
+  }
+}
+
+async function sendRefundDataToPortal(session: Stripe.Checkout.Session) {
+  try {
+    // Extract customer data from session
+    const customerEmail = session.customer_email;
+    const customerName = session.metadata?.customerName || "";
+    const productType = session.metadata?.productType || "";
+    const userId = session.metadata?.userId || "";
+    
+    // Get line items for inventory data
+    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+    const lineItem = lineItems.data[0]; // Get first item
+    const priceId = lineItem?.price?.id || "";
+    const quantity = lineItem?.quantity || 1;
+    
+    // Map price ID to product ID for inventory tracking
+    const productMapping: Record<string, string> = {
+      "price_1SL5CPP6vvUUervCs6aA8L23": "gym-shirt",
+      "price_1SL5CpP6vvUUervCS0hGh5i4": "gym-hoodie", 
+      "price_1SL5D4P6vvUUervCoRbUt0GS": "gym-bottle",
+      "price_1SL5DMP6vvUUervCUFG0B0Ei": "keychain",
+      "price_1SL5DhP6vvUUervCpwAMofHP": "gym-bag",
+      // Membership price IDs (for tracking purposes)
+      "price_1SKhYSP6vvUUervCTpvpt0QO": "base-membership",
+      "price_1SKwUeP6vvUUervCMqO3Xv7v": "flex-membership",
+      "price_1SL2xzP6vvUUervCtqpdm124": "studio-plus-membership",
+      "price_1SKwweP6vvUUervCxH3vVYhG": "dagpass",
+    };
+    
+    const productId = productMapping[priceId] || productType;
+    
+    // Prepare refund data for portal
+    const refundData = {
+      tenant: "kraftverk",
+      customerEmail,
+      customerName,
+      sessionId: session.id,
+      amount: session.amount_total,
+      currency: session.currency,
+      productType,
+      userId,
+      paymentMethod: session.payment_method_types?.[0] || "card",
+      status: "failed",
+      timestamp: new Date().toISOString(),
+      // Inventory tracking data for refund
+      priceId,
+      productId,
+      quantity,
+      inventoryAction: "refund", // Restore stock
+      // Additional Stripe data
+      paymentIntentId: session.payment_intent,
+      customerId: session.customer,
+      subscriptionId: session.subscription,
+      mode: session.mode,
+      successUrl: session.success_url,
+      cancelUrl: session.cancel_url,
+    };
+
+    console.log(`📤 Sending refund data to portal:`, {
+      customerEmail,
+      customerName,
+      amount: refundData.amount,
+      currency: refundData.currency,
+      productType: refundData.productType,
+      priceId: refundData.priceId,
+      productId: refundData.productId,
+      quantity: refundData.quantity,
+      inventoryAction: refundData.inventoryAction,
+    });
+
+    // Send to customer portal webhook endpoint
+    const portalResponse = await fetch("https://source-database.onrender.com/webhooks/kraftverk-customer-data", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify(refundData),
+    });
+
+    if (portalResponse.ok) {
+      console.log(`✅ Refund data sent to portal successfully`);
+    } else {
+      console.error(`❌ Failed to send refund data to portal:`, await portalResponse.text());
+    }
+
+  } catch (error) {
+    console.error("Error sending refund data to portal:", error);
   }
 }
 

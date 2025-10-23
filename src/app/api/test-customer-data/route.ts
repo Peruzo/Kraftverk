@@ -17,6 +17,11 @@ export async function POST(request: NextRequest) {
       paymentMethod: "card",
       status: "completed",
       timestamp: new Date().toISOString(),
+      // Inventory tracking data
+      priceId: body.priceId || "price_1SL5CPP6vvUUervCs6aA8L23",
+      productId: body.productId || "gym-shirt",
+      quantity: body.quantity || 1,
+      inventoryAction: body.inventoryAction || "purchase",
     };
 
     console.log("🧪 Test customer data:", customerData);
