@@ -4,7 +4,7 @@ import Header from "@/components/layout/Header";
 import Footer from "@/components/layout/Footer";
 import AnimatedBackground from "@/components/effects/AnimatedBackground";
 import ScrollProgress from "@/components/effects/ScrollProgress";
-import AnalyticsProvider from "@/components/providers/AnalyticsProvider";
+import EnhancedAnalyticsProvider from "@/components/providers/EnhancedAnalyticsProvider";
 
 export const metadata: Metadata = {
   title: "Kraftverk Studio — Träna smart. Känn dig hemma.",
@@ -20,7 +20,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="sv">
       <body>
-        <AnalyticsProvider>
+        <EnhancedAnalyticsProvider>
           <ScrollProgress />
           <AnimatedBackground />
           <Header />
@@ -28,7 +28,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <Footer />
-        </AnalyticsProvider>
+        </EnhancedAnalyticsProvider>
       </body>
     </html>
   );

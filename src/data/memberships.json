@@ -64,6 +64,25 @@
       "Gym & utvalda klasser",
       "Direktinpassering med QR"
     ]
+  },
+  {
+    "id": "test-kund",
+    "name": "Test Kund",
+    "price": 499,
+    "bookingWindowDays": 10,
+    "guestAllowance": 4,
+    "description": "Testprodukt för utvärdering",
+    "features": [
+      "Obegränsad tillgång",
+      "Alla klasser och tider",
+      "Boka 10 dagar framåt",
+      "4 gästpass/månad",
+      "Recovery-zon",
+      "Digitalt medlemskort",
+      "Medlemsapp",
+      "Träningslogg & analytics",
+      "Premium support"
+    ]
   }
 ]
 
