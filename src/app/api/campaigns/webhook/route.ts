@@ -76,12 +76,13 @@ export async function POST(request: NextRequest) {
       case 'price.updated':
         // Handle Stripe price update - link to campaign
         if (priceUpdate) {
-          const { stripePriceId, originalProductId, campaignId } = priceUpdate;
+          const { stripePriceId, originalProductId, campaignId, campaignName } = priceUpdate;
           
           // Find the campaign to update
-          const campaignToUpdate = activeCampaigns.find(c => c.id === campaignId);
+          let campaignToUpdate = activeCampaigns.find(c => c.id === campaignId);
           
           if (campaignToUpdate) {
+            // Update existing campaign with price
             campaignToUpdate.stripePriceId = stripePriceId;
             campaignToUpdate.originalProductId = originalProductId;
             
@@ -95,14 +96,41 @@ export async function POST(request: NextRequest) {
               originalProductId,
             });
           } else {
-            console.warn(`⚠️ Campaign ${campaignId} not found for price update`);
+            // Create new campaign entry for price-only update
+            const newCampaign = {
+              id: campaignId,
+              name: campaignName || `Price Campaign ${campaignId}`,
+              type: 'discount',
+              status: 'active',
+              discountType: 'percentage',
+              discountValue: 0,
+              products: originalProductId ? [originalProductId] : [],
+              startDate: new Date().toISOString(),
+              endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
+              stripePriceId: stripePriceId,
+              originalProductId: originalProductId,
+              usageCount: 0,
+            };
+            
+            activeCampaigns.push(newCampaign);
+            
+            console.log(`✨ Created new campaign entry for price update: ${newCampaign.name} (${stripePriceId})`);
+            
+            // Track price creation
+            analytics.sendCustomEvent('campaign_created', {
+              campaignId: newCampaign.id,
+              campaignName: newCampaign.name,
+              stripePriceId,
+              originalProductId,
+            });
           }
         }
         
         return NextResponse.json({ 
           success: true, 
           message: 'Price updated',
-          priceId: priceUpdate?.stripePriceId
+          priceId: priceUpdate?.stripePriceId,
+          activeCampaigns: activeCampaigns.length
         });
 
       default:
@@ -121,17 +149,18 @@ export async function POST(request: NextRequest) {
 // GET endpoint to fetch active campaigns
 export async function GET(request: NextRequest) {
   try {
-    // Filter only active campaigns
-    const now = new Date();
-    const active = activeCampaigns.filter(campaign => 
-      campaign.status === 'active' &&
-      new Date(campaign.startDate) <= now &&
-      new Date(campaign.endDate) >= now
+    // Return all campaigns with price IDs (both active and for price lookup)
+    // This allows checkout to find campaign prices
+    const campaignsWithPrices = activeCampaigns.filter(campaign => 
+      campaign.stripePriceId && campaign.originalProductId
     );
 
+    console.log(`📊 Returning ${campaignsWithPrices.length} campaigns with prices`);
+    
     return NextResponse.json({ 
-      campaigns: active,
-      count: active.length
+      campaigns: campaignsWithPrices,
+      count: campaignsWithPrices.length,
+      total: activeCampaigns.length
     });
   } catch (error) {
     console.error('❌ Campaign fetch error:', error);
