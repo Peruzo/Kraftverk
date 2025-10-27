@@ -1,8 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analytics } from "@/lib/analytics";
-
-// Store active campaigns in memory (or use database/Redis in production)
-let activeCampaigns: any[] = [];
+import { 
+  getActiveCampaigns, 
+  addOrUpdateCampaign, 
+  removeCampaign, 
+  findCampaignById 
+} from "@/lib/campaigns-store";
 
 // Verify API key middleware
 function verifyApiKey(request: NextRequest): boolean {
@@ -39,15 +42,8 @@ export async function POST(request: NextRequest) {
       case 'created':
       case 'updated':
         // Update campaign in memory/database
-        const existingIndex = activeCampaigns.findIndex(c => c.id === campaign.id);
-        
-        if (existingIndex >= 0) {
-          activeCampaigns[existingIndex] = campaign;
-          console.log(`✅ Campaign updated: ${campaign.name}`);
-        } else {
-          activeCampaigns.push(campaign);
-          console.log(`✅ Campaign created: ${campaign.name}`);
-        }
+        addOrUpdateCampaign(campaign);
+        console.log(`✅ Campaign ${action}: ${campaign.name}`);
 
         // Track campaign event
         analytics.sendCustomEvent('campaign_updated', {
@@ -59,18 +55,18 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ 
           success: true, 
           message: `Campaign ${action}`,
-          activeCampaigns: activeCampaigns.length
+          activeCampaigns: getActiveCampaigns().length
         });
 
       case 'deleted':
         // Remove campaign
-        activeCampaigns = activeCampaigns.filter(c => c.id !== campaign.id);
+        removeCampaign(campaign.id);
         console.log(`🗑️ Campaign deleted: ${campaign.name}`);
 
         return NextResponse.json({ 
           success: true, 
           message: 'Campaign deleted',
-          activeCampaigns: activeCampaigns.length
+          activeCampaigns: getActiveCampaigns().length
         });
 
       case 'price.updated':
@@ -79,12 +75,13 @@ export async function POST(request: NextRequest) {
           const { stripePriceId, originalProductId, campaignId, campaignName } = priceUpdate;
           
           // Find the campaign to update
-          let campaignToUpdate = activeCampaigns.find(c => c.id === campaignId);
+          let campaignToUpdate = findCampaignById(campaignId);
           
           if (campaignToUpdate) {
             // Update existing campaign with price
             campaignToUpdate.stripePriceId = stripePriceId;
             campaignToUpdate.originalProductId = originalProductId;
+            addOrUpdateCampaign(campaignToUpdate);
             
             console.log(`💰 Price updated for campaign ${campaignToUpdate.name}: ${stripePriceId}`);
             
@@ -110,9 +107,9 @@ export async function POST(request: NextRequest) {
               stripePriceId: stripePriceId,
               originalProductId: originalProductId,
               usageCount: 0,
-            };
+            } as Campaign;
             
-            activeCampaigns.push(newCampaign);
+            addOrUpdateCampaign(newCampaign);
             
             console.log(`✨ Created new campaign entry for price update: ${newCampaign.name} (${stripePriceId})`);
             
@@ -130,7 +127,7 @@ export async function POST(request: NextRequest) {
           success: true, 
           message: 'Price updated',
           priceId: priceUpdate?.stripePriceId,
-          activeCampaigns: activeCampaigns.length
+          activeCampaigns: getActiveCampaigns().length
         });
 
       default:
@@ -151,7 +148,8 @@ export async function GET(request: NextRequest) {
   try {
     // Return all campaigns with price IDs (both active and for price lookup)
     // This allows checkout to find campaign prices
-    const campaignsWithPrices = activeCampaigns.filter(campaign => 
+    const allCampaigns = getActiveCampaigns();
+    const campaignsWithPrices = allCampaigns.filter(campaign => 
       campaign.stripePriceId && campaign.originalProductId
     );
 
@@ -160,7 +158,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ 
       campaigns: campaignsWithPrices,
       count: campaignsWithPrices.length,
-      total: activeCampaigns.length
+      total: allCampaigns.length
     });
   } catch (error) {
     console.error('❌ Campaign fetch error:', error);
