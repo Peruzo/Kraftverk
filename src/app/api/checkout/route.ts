@@ -68,6 +68,14 @@ export async function POST(request: NextRequest) {
       mode,
     });
 
+    // Validate email if provided
+    if (customerEmail && (!customerEmail.includes('@') || customerEmail.split('@').length !== 2)) {
+      console.error("Invalid email format:", customerEmail);
+      return NextResponse.json({ 
+        error: "Invalid email address format" 
+      }, { status: 400 });
+    }
+
     // Fetch campaign discount if campaignId provided
     let campaignDiscount = undefined;
     if (campaignId) {
@@ -108,8 +116,14 @@ export async function POST(request: NextRequest) {
     const stripe = getStripeClient();
     
     // Determine if this is a subscription (membership) or one-time payment (class booking/products)
-    const isSubscription = membershipId && membershipId !== "dagpass" && !productId;
+    // Note: test-kund uses a one-time price in Stripe, so we use payment mode for now
+    const isSubscription = membershipId && 
+                           membershipId !== "dagpass" && 
+                           membershipId !== "test-kund" && 
+                           !productId;
     const mode = isSubscription ? "subscription" : "payment";
+    
+    console.log(`Membership ID: ${membershipId}, Mode: ${mode}`);
     
     console.log("Creating Stripe checkout session with:", {
       priceId,
@@ -140,7 +154,9 @@ export async function POST(request: NextRequest) {
         customerEmail: customerEmail || "",
         customerName: customerName || "",
       },
-      customer_email: customerEmail || undefined,
+      customer_email: (customerEmail && customerEmail.includes('@') && customerEmail.split('@').length === 2) 
+                      ? customerEmail 
+                      : undefined,
       custom_text: {
         submit: {
           message: `Tack för att du väljer ${productName}!`,
