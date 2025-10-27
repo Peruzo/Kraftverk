@@ -82,13 +82,43 @@ class AnalyticsService {
     }
   }
 
-  // Track page views
-  trackPageView(path?: string) {
-    this.sendEvent('pageview', {
+  // Track page views with geo data
+  async trackPageView(path?: string) {
+    const pageData = {
       path: path || window.location.pathname,
       search: window.location.search,
       hash: window.location.hash,
-    });
+    };
+
+    // Send regular page view to existing analytics
+    this.sendEvent('pageview', pageData);
+
+    // Send geo-enabled page view to new endpoint
+    try {
+      const geoResponse = await fetch('/api/geo-pageview', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          url: window.location.href,
+          path: pageData.path,
+          referrer: document.referrer,
+          userAgent: navigator.userAgent,
+          screenWidth: window.screen.width,
+          screenHeight: window.screen.height,
+        }),
+      });
+
+      if (geoResponse.ok) {
+        const result = await geoResponse.json();
+        console.log('🌍 Geo page view tracked:', result);
+      } else {
+        console.error('❌ Geo page view failed:', await geoResponse.text());
+      }
+    } catch (error) {
+      console.error('❌ Geo page view error:', error);
+    }
   }
 
   // Track CTA clicks

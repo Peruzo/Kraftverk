@@ -8,7 +8,7 @@ export default function AnalyticsProvider({ children }: { children: React.ReactN
   const pathname = usePathname();
 
   useEffect(() => {
-    // Track page view on route change
+    // Track page view on route change with geo data
     analytics.trackPageView(pathname);
   }, [pathname]);
 
