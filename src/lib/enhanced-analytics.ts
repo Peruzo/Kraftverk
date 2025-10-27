@@ -217,7 +217,7 @@ class EnhancedAnalyticsService {
       event_props: eventProps,
       user_agent: navigator.userAgent,
       load_time: performance.now() - this.startTime,
-      custom_dimensions: window.CUSTOM_DIMENSIONS || {},
+      custom_dimensions: (window as any).CUSTOM_DIMENSIONS || {},
       domain: this.domain,
     };
 
