@@ -83,6 +83,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create Stripe checkout session
+    if (!process.env.STRIPE_SECRET_KEY) {
+      console.error("❌ STRIPE_SECRET_KEY is not configured in environment");
+      return NextResponse.json({ 
+        error: "Stripe is not configured. Please set STRIPE_SECRET_KEY in your environment variables." 
+      }, { status: 500 });
+    }
+
     const stripe = getStripeClient();
     
     // Determine if this is a subscription (membership) or one-time payment (class booking/products)
