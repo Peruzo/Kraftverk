@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripePriceId, getProductDisplayName } from "@/lib/stripe-config";
 import { analytics } from "@/lib/analytics";
-import { getCampaignPriceId } from "@/lib/campaigns";
+import { getCampaignPriceForProduct } from "@/lib/campaign-price-service";
 
 function getStripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -36,22 +36,23 @@ export async function POST(request: NextRequest) {
     // Determine product type and get corresponding Stripe price
     const productType = membershipId || classInstanceId || productId || "class-booking";
     
-    // Check if there's a campaign price stored locally via webhook
+    // Check for campaign price - local lookup, no external API calls!
     console.log(`🔍 Looking for campaign price for product: ${productType}`);
-    const campaignPriceId = await getCampaignPriceId(productType);
+    const campaignPrice = await getCampaignPriceForProduct("kraftverk", productType);
     
-    if (campaignPriceId) {
-      console.log(`✅ Found campaign price: ${campaignPriceId} for product: ${productType}`);
-    } else {
-      console.log(`ℹ️ No campaign price found, using default price for: ${productType}`);
-    }
+    // Use campaign price if available, otherwise use regular price
+    const priceId = campaignPrice?.hasCampaignPrice 
+      ? campaignPrice.priceId! 
+      : getStripePriceId(productType);
     
-    const priceId = campaignPriceId || getStripePriceId(productType);
     const productName = getProductDisplayName(productType);
     
-    // Log if using campaign price
-    if (campaignPriceId) {
-      console.log(`🎯 Using campaign price ${campaignPriceId} for product ${productType}`);
+    // Log price source
+    if (campaignPrice?.hasCampaignPrice) {
+      console.log(`🎯 Using campaign price: ${campaignPrice.priceId} for product: ${productType}`);
+      console.log(`   Campaign: ${campaignPrice.campaignName} (${campaignPrice.campaignId})`);
+    } else {
+      console.log(`💰 Using regular price: ${priceId} for product: ${productType}`);
     }
 
     // Track checkout initiation (don't fail if analytics fails)
