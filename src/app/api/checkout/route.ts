@@ -60,6 +60,13 @@ export async function POST(request: NextRequest) {
                    "https://kraftverk-test-kund.onrender.com";
     
     console.log("Using origin for redirect URLs:", origin);
+    console.log("Checkout request details:", {
+      membershipId,
+      productId,
+      productType,
+      priceId,
+      mode,
+    });
 
     // Fetch campaign discount if campaignId provided
     let campaignDiscount = undefined;
@@ -104,6 +111,12 @@ export async function POST(request: NextRequest) {
     const isSubscription = membershipId && membershipId !== "dagpass" && !productId;
     const mode = isSubscription ? "subscription" : "payment";
     
+    console.log("Creating Stripe checkout session with:", {
+      priceId,
+      mode,
+      hasCampaignDiscount: !!campaignDiscount,
+    });
+
     const session = await stripe.checkout.sessions.create({
       payment_method_types: ["card"],
       line_items: [
@@ -134,6 +147,8 @@ export async function POST(request: NextRequest) {
         },
       },
     });
+
+    console.log("✅ Stripe session created successfully:", session.id);
 
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error) {
