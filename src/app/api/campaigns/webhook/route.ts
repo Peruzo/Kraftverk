@@ -27,9 +27,14 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, campaign, timestamp, priceUpdate } = body;
+    const { action, campaign, timestamp, priceUpdate, eventId, stripeEvent } = body;
 
-    console.log(`📢 Campaign webhook received: ${action}`, campaign?.name || priceUpdate?.productId);
+    console.log(`📢 Campaign webhook received: ${action}`, campaign?.name || priceUpdate?.campaignName);
+    
+    // Log event ID if provided (for debugging specific events)
+    if (eventId) {
+      console.log(`   Event ID: ${eventId}`);
+    }
 
     switch (action) {
       case 'ping':
@@ -71,9 +76,10 @@ export async function POST(request: NextRequest) {
         });
 
       case 'price.updated':
+      case 'price.created':
         // Handle Stripe price update - link to campaign
         if (priceUpdate) {
-          const { stripePriceId, originalProductId, campaignId, campaignName } = priceUpdate;
+          const { stripePriceId, originalProductId, campaignId, campaignName, metadata } = priceUpdate;
           
           // Find the campaign to update
           let campaignToUpdate = findCampaignById(campaignId);
@@ -113,6 +119,7 @@ export async function POST(request: NextRequest) {
             addOrUpdateCampaign(newCampaign);
             
             console.log(`✨ Created new campaign entry for price update: ${newCampaign.name} (${stripePriceId})`);
+            console.log(`   Metadata:`, metadata);
             
             // Track price creation
             analytics.sendCustomEvent('campaign_created', {
