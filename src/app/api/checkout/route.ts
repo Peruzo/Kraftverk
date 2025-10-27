@@ -37,7 +37,15 @@ export async function POST(request: NextRequest) {
     const productType = membershipId || classInstanceId || productId || "class-booking";
     
     // Check if there's a campaign price for this product
+    console.log(`🔍 Looking for campaign price for product: ${productType}`);
     const campaignPriceId = await getCampaignPriceId(productType);
+    
+    if (campaignPriceId) {
+      console.log(`✅ Found campaign price: ${campaignPriceId} for product: ${productType}`);
+    } else {
+      console.log(`ℹ️ No campaign price found, using default price for: ${productType}`);
+    }
+    
     const priceId = campaignPriceId || getStripePriceId(productType);
     const productName = getProductDisplayName(productType);
     

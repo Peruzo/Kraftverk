@@ -106,11 +106,23 @@ export async function getCampaignPriceId(productId: string): Promise<string | nu
     // Import dynamically to avoid circular dependency
     const { getActiveCampaigns } = await import("./campaigns-store");
     const campaigns = getActiveCampaigns();
+    
+    console.log(`📊 Checking ${campaigns.length} campaigns for product: ${productId}`);
+    campaigns.forEach(c => {
+      console.log(`   Campaign: ${c.id} - Product: ${c.originalProductId} - Price: ${c.stripePriceId}`);
+    });
+    
     const campaign = findApplicableCampaign(productId, campaigns);
+    
+    if (campaign) {
+      console.log(`✅ Found matching campaign: ${campaign.id}`);
+    } else {
+      console.log(`❌ No matching campaign found for product: ${productId}`);
+    }
     
     // Return the campaign's Stripe price ID if it exists and is valid
     if (campaign && campaign.stripePriceId && isCampaignValid(campaign)) {
-      console.log(`🎯 Found campaign price for ${productId}: ${campaign.stripePriceId}`);
+      console.log(`🎯 Returning campaign price for ${productId}: ${campaign.stripePriceId}`);
       return campaign.stripePriceId;
     }
     
