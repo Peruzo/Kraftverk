@@ -28,15 +28,15 @@ export async function POST(request: NextRequest) {
   try {
     switch (event.type) {
       case "checkout.session.completed":
-        await handleCheckoutSessionCompleted(event.data.object as Stripe.Checkout.Session);
+        await handleCheckoutSessionCompleted(stripe, event.data.object as Stripe.Checkout.Session);
         break;
 
       case "payment_intent.succeeded":
-        await handlePaymentIntentSucceeded(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentSucceeded(stripe, event.data.object as Stripe.PaymentIntent);
         break;
 
       case "payment_intent.payment_failed":
-        await handlePaymentIntentFailed(event.data.object as Stripe.PaymentIntent);
+        await handlePaymentIntentFailed(stripe, event.data.object as Stripe.PaymentIntent);
         break;
 
       case "invoice.payment_succeeded":
@@ -58,7 +58,7 @@ export async function POST(request: NextRequest) {
   }
 }
 
-async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) {
+async function handleCheckoutSessionCompleted(stripe: Stripe, session: Stripe.Checkout.Session) {
   console.log(`✅ Checkout session completed: ${session.id}`);
   
   const tenant = session.metadata?.tenant;
@@ -68,7 +68,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 
   // Send complete customer data to customer portal
-  await sendCustomerDataToPortal(session);
+  await sendCustomerDataToPortal(stripe, session);
 
   // Extract product information from line items
   const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
@@ -84,7 +84,7 @@ async function handleCheckoutSessionCompleted(session: Stripe.Checkout.Session) 
   }
 }
 
-async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent) {
+async function handlePaymentIntentSucceeded(stripe: Stripe, paymentIntent: Stripe.PaymentIntent) {
   console.log(`✅ Payment succeeded: ${paymentIntent.id}`);
   
   // Get the checkout session to send customer data
@@ -92,7 +92,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
     try {
       const session = await stripe.checkout.sessions.retrieve(paymentIntent.metadata.session_id);
       if (session.metadata?.tenant === "kraftverk") {
-        await sendCustomerDataToPortal(session);
+        await sendCustomerDataToPortal(stripe, session);
       }
     } catch (error) {
       console.error("Error retrieving session for payment intent:", error);
@@ -100,7 +100,7 @@ async function handlePaymentIntentSucceeded(paymentIntent: Stripe.PaymentIntent)
   }
 }
 
-async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
+async function handlePaymentIntentFailed(stripe: Stripe, paymentIntent: Stripe.PaymentIntent) {
   console.log(`❌ Payment failed: ${paymentIntent.id}`);
   
   // Get the checkout session to send refund inventory data
@@ -108,7 +108,7 @@ async function handlePaymentIntentFailed(paymentIntent: Stripe.PaymentIntent) {
     try {
       const session = await stripe.checkout.sessions.retrieve(paymentIntent.metadata.session_id);
       if (session.metadata?.tenant === "kraftverk") {
-        await sendRefundDataToPortal(session);
+        await sendRefundDataToPortal(stripe, session);
       }
     } catch (error) {
       console.error("Error retrieving session for failed payment:", error);
@@ -130,7 +130,7 @@ async function handleSubscriptionDeleted(subscription: Stripe.Subscription) {
   // This could trigger inventory adjustments or access removal
 }
 
-async function sendCustomerDataToPortal(session: Stripe.Checkout.Session) {
+async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout.Session) {
   try {
     // Extract customer data from session
     const customerEmail = session.customer_email;
@@ -219,7 +219,7 @@ async function sendCustomerDataToPortal(session: Stripe.Checkout.Session) {
   }
 }
 
-async function sendRefundDataToPortal(session: Stripe.Checkout.Session) {
+async function sendRefundDataToPortal(stripe: Stripe, session: Stripe.Checkout.Session) {
   try {
     // Extract customer data from session
     const customerEmail = session.customer_email;
