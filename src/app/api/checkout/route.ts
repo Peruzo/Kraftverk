@@ -37,14 +37,17 @@ export async function POST(request: NextRequest) {
     const priceId = getStripePriceId(productType);
     const productName = getProductDisplayName(productType);
 
-    // Track checkout initiation
-    analytics.trackCheckout('initiated');
-    
-    // Track action for customer portal
-    if (productId) {
-      analytics.trackMembershipAction('product_checkout_initiated', productType);
-    } else {
-      analytics.trackMembershipAction('checkout_initiated', productType);
+    // Track checkout initiation (don't fail if analytics fails)
+    try {
+      analytics.trackCheckout('initiated');
+      if (productId) {
+        analytics.trackMembershipAction('product_checkout_initiated', productType);
+      } else {
+        analytics.trackMembershipAction('checkout_initiated', productType);
+      }
+    } catch (analyticsError) {
+      console.warn("Analytics tracking failed:", analyticsError);
+      // Continue with checkout even if analytics fails
     }
 
     // Get origin for redirect URLs
@@ -130,9 +133,14 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error) {
     console.error("Stripe checkout error:", error);
+    console.error("Error details:", {
+      message: error instanceof Error ? error.message : "Unknown error",
+      stack: error instanceof Error ? error.stack : undefined,
+    });
     analytics.trackCheckout('failed');
     return NextResponse.json({ 
-      error: "Payment initialization failed" 
+      error: "Payment initialization failed",
+      details: error instanceof Error ? error.message : "Unknown error"
     }, { status: 500 });
   }
 }
