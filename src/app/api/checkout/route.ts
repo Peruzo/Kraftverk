@@ -68,6 +68,14 @@ export async function POST(request: NextRequest) {
                    process.env.NEXT_PUBLIC_APP_URL || 
                    "https://kraftverk-test-kund.onrender.com";
     
+    // Determine if this is a subscription (membership) or one-time payment (class booking/products)
+    // Note: test-kund uses a one-time price in Stripe, so we use payment mode for now
+    const isSubscription = membershipId && 
+                           membershipId !== "dagpass" && 
+                           membershipId !== "test-kund" && 
+                           !productId;
+    const mode = isSubscription ? "subscription" : "payment";
+    
     console.log("Using origin for redirect URLs:", origin);
     console.log("Checkout request details:", {
       membershipId,
@@ -123,14 +131,6 @@ export async function POST(request: NextRequest) {
     }
 
     const stripe = getStripeClient();
-    
-    // Determine if this is a subscription (membership) or one-time payment (class booking/products)
-    // Note: test-kund uses a one-time price in Stripe, so we use payment mode for now
-    const isSubscription = membershipId && 
-                           membershipId !== "dagpass" && 
-                           membershipId !== "test-kund" && 
-                           !productId;
-    const mode = isSubscription ? "subscription" : "payment";
     
     console.log(`Membership ID: ${membershipId}, Mode: ${mode}`);
     
