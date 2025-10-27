@@ -36,7 +36,7 @@ export async function POST(request: NextRequest) {
     // Determine product type and get corresponding Stripe price
     const productType = membershipId || classInstanceId || productId || "class-booking";
     
-    // Check if there's a campaign price for this product
+    // Check if there's a campaign price stored locally via webhook
     console.log(`🔍 Looking for campaign price for product: ${productType}`);
     const campaignPriceId = await getCampaignPriceId(productType);
     

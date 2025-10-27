@@ -1,19 +1,48 @@
-# Campaign Price Update Webhook Integration
+# Campaign Price Integration Guide
 
 ## Overview
 
-The Kraftverk Studio website supports dynamic campaign pricing through Stripe price updates. When you create a campaign with custom pricing in the customer portal, you need to send a webhook to Kraftverk to update the checkout prices in real-time.
+The Kraftverk Studio website supports dynamic campaign pricing by calling the customer portal API during checkout. When you create a campaign with custom pricing in the customer portal, Kraftverk will automatically fetch and use those prices when customers make purchases.
 
-## Webhook Endpoint
+## Architecture
 
-**URL:** `https://kraftverk-test-kund.onrender.com/api/campaigns/webhook`
+1. **Customer Portal** creates campaigns and stores prices in Stripe
+2. **Kraftverk** calls the customer portal API during checkout
+3. **Checkout** uses campaign price if available, otherwise default price
 
-**Method:** `POST`
+## Customer Portal API Endpoint
 
-**Authentication:** Required
+**URL:** `https://source.database.onrender.com/api/campaigns/price/:productId?tenant=kraftverk`
+
+**Method:** `GET`
+
+**Authentication:** Optional (if your portal requires it)
+
+### Request
 
 ```
-Authorization: Bearer YOUR_SOURCE_API_KEY
+GET /api/campaigns/price/test-kund?tenant=kraftverk
+```
+
+### Response
+
+```json
+{
+  "success": true,
+  "hasCampaignPrice": true,
+  "priceId": "price_1ABC123xyz",
+  "campaignId": "camp_123",
+  "campaignName": "Summer Promotion 2024"
+}
+```
+
+**Response when no campaign:**
+
+```json
+{
+  "success": false,
+  "hasCampaignPrice": false
+}
 ```
 
 ## Webhook Events
@@ -53,7 +82,18 @@ Triggered when a new Stripe Price is created for a campaign.
 }
 ```
 
-## Complete Integration Flow
+## How It Works on Kraftverk Side
+
+Kraftverk's checkout process:
+
+1. Customer clicks to purchase "test-kund"
+2. Kraftverk calls: `GET /api/campaigns/price/test-kund?tenant=kraftverk`
+3. If campaign exists: Uses the campaign price ID from customer portal
+4. If no campaign: Uses default price ID from configuration
+5. Creates Stripe checkout session with the determined price
+6. Customer sees the correct price at checkout
+
+## Integration Flow
 
 ### 1. Create Product & Price in Stripe
 
@@ -82,39 +122,61 @@ const campaign = {
 };
 ```
 
-### 3. Send Webhook to Kraftverk
+### 3. Create API Endpoint
 
-Immediately after creating the Stripe Price and saving your campaign, send the webhook:
+Create an API endpoint in your customer portal to return campaign prices:
 
 ```javascript
-const webhookPayload = {
-  action: "price.updated",
-  priceUpdate: {
-    stripePriceId: "price_1ABC123xyz",
-    originalProductId: "test-kund",
-    campaignId: "camp_123",
-    campaignName: "Summer Promotion 2024"
+// GET /api/campaigns/price/:productId
+app.get('/api/campaigns/price/:productId', async (req, res) => {
+  const { productId } = req.params;
+  const { tenant } = req.query;
+  
+  // Find active campaign for this product
+  const campaign = await db.campaigns.findOne({
+    where: {
+      originalProductId: productId,
+      tenant: tenant,
+      status: 'active',
+      startDate: { $lte: new Date() },
+      endDate: { $gte: new Date() }
+    }
+  });
+  
+  if (campaign && campaign.stripePriceId) {
+    res.json({
+      success: true,
+      hasCampaignPrice: true,
+      priceId: campaign.stripePriceId,
+      campaignId: campaign.id,
+      campaignName: campaign.name
+    });
+  } else {
+    res.json({
+      success: false,
+      hasCampaignPrice: false
+    });
   }
-};
-
-const response = await fetch('https://kraftverk-test-kund.onrender.com/api/campaigns/webhook', {
-  method: 'POST',
-  headers: {
-    'Content-Type': 'application/json',
-    'Authorization': `Bearer ${YOUR_SOURCE_API_KEY}`
-  },
-  body: JSON.stringify(webhookPayload)
 });
-
-const result = await response.json();
-console.log('Campaign updated:', result);
 ```
 
-### 4. Verify Success
+### 4. Test the API
 
-Check the Render logs at https://render.com/dashboard to see:
+Test that your endpoint returns the correct data:
+
+```bash
+curl "https://source.database.onrender.com/api/campaigns/price/test-kund?tenant=kraftverk"
 ```
-✨ Created new campaign entry for price update: Summer Promotion 2024 (price_1ABC123xyz)
+
+Expected response:
+```json
+{
+  "success": true,
+  "hasCampaignPrice": true,
+  "priceId": "price_1ABC123xyz",
+  "campaignId": "camp_123",
+  "campaignName": "Summer Promotion 2024"
+}
 ```
 
 ## Product ID Mapping
@@ -275,36 +337,61 @@ async function createCampaign() {
       name: 'Summer Promotion',
       stripePriceId: price.id,
       originalProductId: 'test-kund',
+      tenant: 'kraftverk',
       startDate: new Date(),
       endDate: new Date(Date.now() + 90 * 24 * 60 * 60 * 1000), // 90 days
       status: 'active'
     }
   });
 
-  // 3. Send webhook to Kraftverk
-  await fetch('https://kraftverk-test-kund.onrender.com/api/campaigns/webhook', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.SOURCE_API_KEY}`
-    },
-    body: JSON.stringify({
-      action: 'price.updated',
-      priceUpdate: {
-        stripePriceId: price.id,
-        originalProductId: 'test-kund',
-        campaignId: campaign.id,
-        campaignName: campaign.name
-      }
-    })
-  });
-
+  // 3. Campaign is now available via API
+  // Kraftverk will automatically fetch it during checkout
+  
   return campaign;
 }
 ```
 
+## Testing Campaign Prices
+
+### Test Your API Endpoint
+
+```bash
+# Test with a product that has a campaign
+curl "https://source.database.onrender.com/api/campaigns/price/test-kund?tenant=kraftverk"
+
+# Expected: Campaign price returned
+{
+  "success": true,
+  "hasCampaignPrice": true,
+  "priceId": "price_1ABC123xyz",
+  "campaignId": "camp_123",
+  "campaignName": "Summer Promotion"
+}
+
+# Test with a product without a campaign
+curl "https://source.database.onrender.com/api/campaigns/price/base?tenant=kraftverk"
+
+# Expected: No campaign
+{
+  "success": false,
+  "hasCampaignPrice": false
+}
+```
+
+### Test Checkout on Kraftverk
+
+1. Go to https://kraftverk-test-kund.onrender.com/medlemskap
+2. Click "Test Kund"
+3. Check Render logs for:
+   ```
+   🔍 Looking for campaign price for product: test-kund
+   🎯 Campaign price found for test-kund: price_CAMPAIGN_123
+   ✅ Found campaign price: price_CAMPAIGN_123 for product: test-kund
+   🎯 Using campaign price price_CAMPAIGN_123 for product test-kund
+   ```
+
 ---
 
-**Last Updated:** January 2024
-**Version:** 1.0
+**Last Updated:** January 2024  
+**Version:** 2.0 (Updated for API-based architecture)
 
