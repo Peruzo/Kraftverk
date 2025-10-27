@@ -27,12 +27,28 @@ export async function getCampaignPriceForProduct(
     // Get all active campaigns from local store
     const allCampaigns = getActiveCampaigns();
     
+    console.log(`🔍 getCampaignPriceForProduct(${tenant}, ${productId})`);
+    console.log(`   Total campaigns in store: ${allCampaigns.length}`);
+    
+    // Log all campaigns for debugging
+    allCampaigns.forEach(c => {
+      console.log(`   Campaign: ${c.id}, Product: ${c.originalProductId}, Price: ${c.stripePriceId}, Status: ${c.status}`);
+      console.log(`     Start: ${c.startDate}, End: ${c.endDate}`);
+      console.log(`     Active: ${isCampaignActive(c)}`);
+    });
+    
     // Find campaign that matches this product
     const campaign = allCampaigns.find(c => 
       c.originalProductId === productId && 
       c.status === 'active' &&
       isCampaignActive(c)
     );
+    
+    if (campaign) {
+      console.log(`✅ Found matching campaign: ${campaign.id}`);
+    } else {
+      console.log(`❌ No matching campaign found for product: ${productId}`);
+    }
     
     if (campaign && campaign.stripePriceId) {
       console.log(`✅ Campaign price found for ${productId}: ${campaign.stripePriceId}`);
@@ -45,7 +61,7 @@ export async function getCampaignPriceForProduct(
       };
     }
     
-    console.log(`ℹ️ No campaign price for ${productId}`);
+    console.log(`ℹ️ No campaign price for ${productId} - using default price`);
     return {
       hasCampaignPrice: false,
     };

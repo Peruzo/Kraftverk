@@ -154,10 +154,17 @@ export async function GET(request: NextRequest) {
       campaign.stripePriceId && campaign.originalProductId
     );
 
-    console.log(`📊 Returning ${campaignsWithPrices.length} campaigns with prices`);
+    console.log(`📊 Total campaigns in store: ${allCampaigns.length}`);
+    console.log(`📊 Campaigns with prices: ${campaignsWithPrices.length}`);
+    
+    // Log all campaigns for debugging
+    allCampaigns.forEach(campaign => {
+      console.log(`   - ${campaign.id}: ${campaign.originalProductId} → ${campaign.stripePriceId}`);
+    });
     
     return NextResponse.json({ 
       campaigns: campaignsWithPrices,
+      allCampaigns: allCampaigns, // Include all for debugging
       count: campaignsWithPrices.length,
       total: allCampaigns.length
     });
