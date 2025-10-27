@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analytics } from "@/lib/analytics";
+import { Campaign } from "@/lib/campaigns";
 import { 
   getActiveCampaigns, 
   addOrUpdateCampaign, 
