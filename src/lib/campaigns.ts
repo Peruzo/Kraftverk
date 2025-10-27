@@ -15,6 +15,8 @@ export interface Campaign {
   endDate: string;
   stripeCouponId?: string;
   stripePromotionCodeId?: string;
+  stripePriceId?: string; // Dynamic campaign price from Stripe
+  originalProductId?: string; // The product this campaign replaces
   usageCount: number;
   maxUses?: number;
 }
@@ -89,5 +91,26 @@ export function isCampaignValid(campaign: Campaign): boolean {
     new Date(campaign.endDate) >= now &&
     (!campaign.maxUses || campaign.usageCount < campaign.maxUses)
   );
+}
+
+/**
+ * Get campaign price ID for a product
+ * Returns the campaign price if a valid campaign exists, otherwise null
+ */
+export async function getCampaignPriceId(productId: string): Promise<string | null> {
+  try {
+    const campaigns = await fetchActiveCampaigns();
+    const campaign = findApplicableCampaign(productId, campaigns);
+    
+    // Return the campaign's Stripe price ID if it exists and is valid
+    if (campaign && campaign.stripePriceId && isCampaignValid(campaign)) {
+      return campaign.stripePriceId;
+    }
+    
+    return null;
+  } catch (error) {
+    console.error('Failed to get campaign price:', error);
+    return null;
+  }
 }
 

@@ -23,9 +23,9 @@ export async function POST(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { action, campaign, timestamp } = body;
+    const { action, campaign, timestamp, priceUpdate } = body;
 
-    console.log(`📢 Campaign webhook received: ${action}`, campaign?.name);
+    console.log(`📢 Campaign webhook received: ${action}`, campaign?.name || priceUpdate?.productId);
 
     switch (action) {
       case 'ping':
@@ -71,6 +71,38 @@ export async function POST(request: NextRequest) {
           success: true, 
           message: 'Campaign deleted',
           activeCampaigns: activeCampaigns.length
+        });
+
+      case 'price.updated':
+        // Handle Stripe price update - link to campaign
+        if (priceUpdate) {
+          const { stripePriceId, originalProductId, campaignId } = priceUpdate;
+          
+          // Find the campaign to update
+          const campaignToUpdate = activeCampaigns.find(c => c.id === campaignId);
+          
+          if (campaignToUpdate) {
+            campaignToUpdate.stripePriceId = stripePriceId;
+            campaignToUpdate.originalProductId = originalProductId;
+            
+            console.log(`💰 Price updated for campaign ${campaignToUpdate.name}: ${stripePriceId}`);
+            
+            // Track price update
+            analytics.sendCustomEvent('campaign_price_updated', {
+              campaignId: campaignToUpdate.id,
+              campaignName: campaignToUpdate.name,
+              stripePriceId,
+              originalProductId,
+            });
+          } else {
+            console.warn(`⚠️ Campaign ${campaignId} not found for price update`);
+          }
+        }
+        
+        return NextResponse.json({ 
+          success: true, 
+          message: 'Price updated',
+          priceId: priceUpdate?.stripePriceId
         });
 
       default:

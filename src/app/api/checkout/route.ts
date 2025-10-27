@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getStripePriceId, getProductDisplayName } from "@/lib/stripe-config";
 import { analytics } from "@/lib/analytics";
+import { getCampaignPriceId } from "@/lib/campaigns";
 
 function getStripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -34,8 +35,16 @@ export async function POST(request: NextRequest) {
 
     // Determine product type and get corresponding Stripe price
     const productType = membershipId || classInstanceId || productId || "class-booking";
-    const priceId = getStripePriceId(productType);
+    
+    // Check if there's a campaign price for this product
+    const campaignPriceId = await getCampaignPriceId(productType);
+    const priceId = campaignPriceId || getStripePriceId(productType);
     const productName = getProductDisplayName(productType);
+    
+    // Log if using campaign price
+    if (campaignPriceId) {
+      console.log(`🎯 Using campaign price ${campaignPriceId} for product ${productType}`);
+    }
 
     // Track checkout initiation (don't fail if analytics fails)
     try {
