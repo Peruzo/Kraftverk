@@ -46,13 +46,17 @@ export function findApplicableCampaign(
 ): Campaign | null {
   const now = new Date();
   
-  return campaigns.find(campaign => 
-    campaign.status === 'active' &&
-    campaign.products.includes(productId) &&
-    new Date(campaign.startDate) <= now &&
-    new Date(campaign.endDate) >= now &&
-    (!campaign.maxUses || campaign.usageCount < campaign.maxUses)
-  ) || null;
+  // Check for campaigns that target this product via originalProductId or products array
+  return campaigns.find(campaign => {
+    const matchesProduct = campaign.originalProductId === productId || 
+                          campaign.products.includes(productId);
+    
+    return matchesProduct && 
+           campaign.status === 'active' &&
+           new Date(campaign.startDate) <= now &&
+           new Date(campaign.endDate) >= now &&
+           (!campaign.maxUses || campaign.usageCount < campaign.maxUses);
+  }) || null;
 }
 
 /**
