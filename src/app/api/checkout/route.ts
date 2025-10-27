@@ -51,10 +51,15 @@ export async function POST(request: NextRequest) {
     }
 
     // Get origin for redirect URLs
-    const origin = request.headers.get("origin") || 
-                   (process.env.NODE_ENV === "development" 
-                     ? "http://localhost:3000" 
-                     : process.env.NEXT_PUBLIC_APP_URL);
+    const requestOrigin = request.headers.get("origin") || 
+                         request.headers.get("referer")?.replace(/\/[^/]*$/, '') || 
+                         request.url?.replace(/\/api\/.*$/, '');
+    
+    const origin = requestOrigin || 
+                   process.env.NEXT_PUBLIC_APP_URL || 
+                   "https://kraftverk-test-kund.onrender.com";
+    
+    console.log("Using origin for redirect URLs:", origin);
 
     // Fetch campaign discount if campaignId provided
     let campaignDiscount = undefined;
