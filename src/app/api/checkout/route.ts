@@ -184,6 +184,15 @@ export async function POST(request: NextRequest) {
     });
 
     console.log("✅ Stripe session created successfully:", session.id);
+    console.log('💳 [DEBUG] Stripe session created:', {
+      id: session.id,
+      url: session.url,
+      metadata: session.metadata,
+      customer_email: session.customer_email,
+      mode: session.mode,
+      amount_total: session.amount_total,
+      currency: session.currency
+    });
 
     return NextResponse.json({ url: session.url }, { status: 200 });
   } catch (error) {

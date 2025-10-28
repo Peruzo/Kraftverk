@@ -8,6 +8,11 @@ export default function AnalyticsProvider({ children }: { children: React.ReactN
   const pathname = usePathname();
 
   useEffect(() => {
+    console.log('🔍 [DEBUG] AnalyticsProvider useEffect triggered');
+    console.log('🔍 [DEBUG] Current pathname:', pathname);
+    console.log('🔍 [DEBUG] Analytics object:', analytics);
+    console.log('🔍 [DEBUG] Calling analytics.trackPageView...');
+    
     // Track page view on route change with geo data
     analytics.trackPageView(pathname);
   }, [pathname]);

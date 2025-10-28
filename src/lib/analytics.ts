@@ -50,7 +50,16 @@ class AnalyticsService {
   }
 
   private async sendEvent(eventType: string, properties: Record<string, any> = {}) {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      console.log('🔍 [DEBUG] sendEvent called on server side - skipping');
+      return;
+    }
+
+    console.log('🔍 [DEBUG] Starting analytics event tracking...');
+    console.log('🔍 [DEBUG] Event type:', eventType);
+    console.log('🔍 [DEBUG] Properties:', properties);
+    console.log('🔍 [DEBUG] Current URL:', window.location.href);
+    console.log('🔍 [DEBUG] Current path:', window.location.pathname);
 
     const event: AnalyticsEvent = {
       type: eventType,
@@ -70,10 +79,10 @@ class AnalyticsService {
       events: [event]
     };
 
+    console.log('🔍 [DEBUG] Payload to send:', JSON.stringify(payload, null, 2));
+    console.log('🔍 [DEBUG] Sending to endpoint:', PAGEVIEW_ENDPOINT);
+
     try {
-      console.log('📤 Sending analytics to:', PAGEVIEW_ENDPOINT);
-      console.log('📊 Payload:', JSON.stringify(payload, null, 2));
-      
       const response = await fetch(PAGEVIEW_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -83,27 +92,53 @@ class AnalyticsService {
         body: JSON.stringify(payload),
       });
 
+      console.log('🔍 [DEBUG] Response status:', response.status);
+      console.log('🔍 [DEBUG] Response headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('🔍 [DEBUG] Response body:', responseText);
+
       if (response.ok) {
-        const result = await response.json();
-        console.log('✅ Analytics tracked successfully:', eventType, result);
+        console.log('✅ [SUCCESS] Analytics tracked successfully:', eventType);
+        try {
+          const result = JSON.parse(responseText);
+          console.log('✅ [SUCCESS] Parsed response:', result);
+        } catch (parseError) {
+          console.log('✅ [SUCCESS] Response (non-JSON):', responseText);
+        }
       } else {
-        const errorText = await response.text();
-        console.error('❌ Analytics failed:', response.status, errorText);
+        console.error('❌ [ERROR] Analytics failed:', response.status, responseText);
       }
     } catch (error) {
-      console.error('❌ Analytics error:', error);
+      console.error('❌ [ERROR] Network error during analytics tracking:', error);
+      console.error('❌ [ERROR] Error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown',
+      });
     }
   }
 
   // Track page views with optional geo data
   async trackPageView(path?: string) {
+    console.log('🔍 [DEBUG] Starting page view tracking...');
+    console.log('🔍 [DEBUG] Path parameter:', path);
+    console.log('🔍 [DEBUG] Window location pathname:', window.location.pathname);
+    console.log('🔍 [DEBUG] Final path to track:', path || window.location.pathname);
+
     // Send regular page view first
+    console.log('🔍 [DEBUG] Sending regular page view...');
     this.sendEvent('page_view', { path: path || window.location.pathname });
 
     // Try to get geo data and send to geo endpoint
+    console.log('🌍 [DEBUG] Starting geo page view tracking...');
     try {
+      console.log('🌍 [DEBUG] Fetching geo data from ipapi.co...');
       const geoResponse = await fetch('https://ipapi.co/json/');
+      console.log('🌍 [DEBUG] Geo API response status:', geoResponse.status);
+      
       const geoData = await geoResponse.json();
+      console.log('🌍 [DEBUG] Geo data received:', geoData);
       
       // Send geo-tracked page view to the correct endpoint
       const geoPayload = {
@@ -126,6 +161,9 @@ class AnalyticsService {
         screenHeight: window.screen.height,
       };
 
+      console.log('🌍 [DEBUG] Geo payload to send:', JSON.stringify(geoPayload, null, 2));
+      console.log('🌍 [DEBUG] Sending to geo endpoint:', GEO_ENDPOINT);
+
       const response = await fetch(GEO_ENDPOINT, {
         method: 'POST',
         headers: {
@@ -135,14 +173,30 @@ class AnalyticsService {
         body: JSON.stringify(geoPayload),
       });
 
+      console.log('🌍 [DEBUG] Geo response status:', response.status);
+      console.log('🌍 [DEBUG] Geo response headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('🌍 [DEBUG] Geo response body:', responseText);
+
       if (response.ok) {
-        const result = await response.json();
-        console.log('🌍 Geo page view tracked:', result);
+        console.log('✅ [SUCCESS] Geo page view tracked successfully');
+        try {
+          const result = JSON.parse(responseText);
+          console.log('✅ [SUCCESS] Geo parsed response:', result);
+        } catch (parseError) {
+          console.log('✅ [SUCCESS] Geo response (non-JSON):', responseText);
+        }
       } else {
-        console.error('❌ Geo page view failed:', await response.text());
+        console.error('❌ [ERROR] Geo page view tracking failed:', response.status, responseText);
       }
     } catch (error) {
-      console.error('❌ Geo tracking failed:', error);
+      console.error('❌ [ERROR] Network error during geo tracking:', error);
+      console.error('❌ [ERROR] Geo error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown',
+      });
     }
   }
 
