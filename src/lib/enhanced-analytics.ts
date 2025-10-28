@@ -126,7 +126,7 @@ class EnhancedAnalyticsService {
     if (userElement) {
       const userId = userElement.getAttribute('data-user-id');
       if (userId) {
-        return btoa(userId + TENANT).substr(0, 16);
+        return btoa(userId + TENANT_ID).substr(0, 16);
       }
     }
     return undefined;
