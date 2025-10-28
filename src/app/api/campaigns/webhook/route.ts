@@ -7,6 +7,7 @@ import {
   removeCampaign, 
   findCampaignById,
   deactivateOlderCampaignsForProduct,
+  hydrateCampaignsFromPersistence,
 } from "@/lib/campaigns-store";
 
 // Verify API key middleware
@@ -22,6 +23,8 @@ function verifyApiKey(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   try {
+    // Hydrate campaigns first to ensure persistence before updates
+    await hydrateCampaignsFromPersistence();
     // Verify API key
     if (!verifyApiKey(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });

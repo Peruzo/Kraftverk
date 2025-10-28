@@ -4,6 +4,7 @@
  */
 
 import { Campaign } from "./campaigns";
+import { loadPersistedCampaigns, persistCampaigns } from "./campaigns-persistence";
 
 // Store active campaigns in memory
 let activeCampaigns: Campaign[] = [];
@@ -32,10 +33,13 @@ export function addOrUpdateCampaign(campaign: Campaign): void {
       updatedAt: new Date().toISOString(),
     });
   }
+  // Best-effort persist (async, fire-and-forget)
+  void persistCampaigns(activeCampaigns);
 }
 
 export function removeCampaign(campaignId: string): void {
   activeCampaigns = activeCampaigns.filter(c => c.id !== campaignId);
+  void persistCampaigns(activeCampaigns);
 }
 
 export function findCampaignById(campaignId: string): Campaign | undefined {
@@ -53,5 +57,18 @@ export function deactivateOlderCampaignsForProduct(productId: string, keepCampai
     }
     return c;
   });
+  void persistCampaigns(activeCampaigns);
+}
+
+/**
+ * Initialize the in-memory store from Redis if available and memory is empty.
+ */
+export async function hydrateCampaignsFromPersistence(): Promise<void> {
+  if (activeCampaigns.length > 0) return;
+  const loaded = await loadPersistedCampaigns();
+  if (loaded && Array.isArray(loaded)) {
+    activeCampaigns = loaded;
+    console.log(`🧊 Hydrated ${activeCampaigns.length} campaigns from Redis`);
+  }
 }
 

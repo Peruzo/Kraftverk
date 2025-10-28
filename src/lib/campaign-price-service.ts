@@ -3,7 +3,7 @@
  * Provides local lookup of campaign prices without external API calls
  */
 
-import { getActiveCampaigns, findCampaignById } from "./campaigns-store";
+import { getActiveCampaigns, findCampaignById, hydrateCampaignsFromPersistence } from "./campaigns-store";
 import { Campaign } from "./campaigns";
 
 interface CampaignPriceResult {
@@ -24,6 +24,9 @@ export async function getCampaignPriceForProduct(
   productId: string
 ): Promise<CampaignPriceResult | null> {
   try {
+    // Ensure memory is hydrated from persistence if empty
+    await hydrateCampaignsFromPersistence();
+
     // Get all active campaigns from local store
     const allCampaigns = getActiveCampaigns();
     
