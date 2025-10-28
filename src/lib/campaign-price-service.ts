@@ -3,7 +3,7 @@
  * Provides local lookup of campaign prices without external API calls
  */
 
-import { getActiveCampaigns, findCampaignById, hydrateCampaignsFromPersistence } from "./campaigns-store";
+import { getActivePrice, getAllActive } from "./campaigns-repo";
 import { Campaign } from "./campaigns";
 
 interface CampaignPriceResult {
@@ -24,32 +24,30 @@ export async function getCampaignPriceForProduct(
   productId: string
 ): Promise<CampaignPriceResult | null> {
   try {
-    // Ensure memory is hydrated from persistence if empty
-    await hydrateCampaignsFromPersistence();
-
-    // Get all active campaigns from local store
-    const allCampaigns = getActiveCampaigns();
+    // DB-backed: fetch directly
+    const active = await getActivePrice(tenant, productId);
     
     console.log(`🔍 getCampaignPriceForProduct(${tenant}, ${productId})`);
-    console.log(`   Total campaigns in store: ${allCampaigns.length}`);
+    console.log(`   Active price present: ${Boolean(active)}`);
     
-    // Log all campaigns for debugging
-    allCampaigns.forEach(c => {
-      console.log(`   Campaign: ${c.id}, Product: ${c.originalProductId}, Price: ${c.stripePriceId}, Status: ${c.status}`);
-      console.log(`     Start: ${c.startDate}, End: ${c.endDate}`);
-      console.log(`     Active: ${isCampaignActive(c)}`);
-    });
-    
-  // Find newest active campaign for this product (by updatedAt/createdAt desc)
-  const matching = allCampaigns
-    .filter(c => c.originalProductId === productId && c.status === 'active' && isCampaignActive(c))
-    .sort((a, b) => {
-      const aTime = new Date(a.updatedAt || a.createdAt || a.startDate).getTime();
-      const bTime = new Date(b.updatedAt || b.createdAt || b.startDate).getTime();
-      return bTime - aTime; // newest first
-    });
-
-  const campaign = matching[0];
+  const campaign = active
+      ? ({
+          id: active.campaignId || 'campaign',
+          name: (active.metadata as any)?.campaign_name || 'Kampanj',
+          type: 'discount',
+          status: 'active',
+          discountType: 'fixed',
+          discountValue: 0,
+          products: [productId],
+          startDate: (active.validFrom as unknown as Date)?.toString?.() || new Date().toISOString(),
+          endDate: active.validTo ? (active.validTo as unknown as Date).toString?.() : new Date(Date.now()+365*24*60*60*1000).toISOString(),
+          stripePriceId: active.stripePriceId,
+          originalProductId: productId,
+          usageCount: 0,
+          createdAt: undefined,
+          updatedAt: undefined,
+        } as unknown as Campaign)
+      : undefined;
     
     if (campaign) {
       console.log(`✅ Found matching campaign: ${campaign.id}`);

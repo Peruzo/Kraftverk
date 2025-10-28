@@ -1,14 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 import { analytics } from "@/lib/analytics";
 import { Campaign } from "@/lib/campaigns";
+// DB-backed repo (Postgres)
+import { prisma } from "@/lib/prisma";
 import { 
-  getActiveCampaigns, 
-  addOrUpdateCampaign, 
-  removeCampaign, 
-  findCampaignById,
-  deactivateOlderCampaignsForProduct,
-  hydrateCampaignsFromPersistence,
-} from "@/lib/campaigns-store";
+  upsertActivePrice,
+  writeHistory,
+  isProcessed,
+  markProcessed,
+  getAllActive,
+  getActivePrice,
+  markActiveExpired
+} from "@/lib/campaigns-repo";
 
 // Verify API key middleware
 function verifyApiKey(request: NextRequest): boolean {
@@ -23,8 +26,7 @@ function verifyApiKey(request: NextRequest): boolean {
 
 export async function POST(request: NextRequest) {
   try {
-    // Hydrate campaigns first to ensure persistence before updates
-    await hydrateCampaignsFromPersistence();
+    // No-op for DB path
     // Verify API key
     if (!verifyApiKey(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -51,118 +53,79 @@ export async function POST(request: NextRequest) {
 
       case 'created':
       case 'updated':
-        // Update campaign in memory/database
-        addOrUpdateCampaign(campaign);
-        console.log(`✅ Campaign ${action}: ${campaign.name}`);
-
-        // Track campaign event
-        analytics.sendCustomEvent('campaign_updated', {
-          campaignId: campaign.id,
-          campaignName: campaign.name,
-          action: action,
-        });
-
-        return NextResponse.json({ 
-          success: true, 
-          message: `Campaign ${action}`,
-          activeCampaigns: getActiveCampaigns().length
-        });
+        // Accept but DB truth is price.* events; record history if needed
+        console.log(`ℹ️ Campaign ${action} received (metadata only)`);
+        return NextResponse.json({ success: true, message: `Campaign ${action}` });
 
       case 'deleted':
-        // Remove campaign
-        removeCampaign(campaign.id);
-        console.log(`🗑️ Campaign deleted: ${campaign.name}`);
-
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Campaign deleted',
-          activeCampaigns: getActiveCampaigns().length
-        });
+        // Handled via price.deleted; ignore
+        return NextResponse.json({ success: true, message: 'Campaign delete acknowledged' });
 
       case 'price.updated':
       case 'price.created':
-        // Handle Stripe price update - UPSERT behavior
         if (priceUpdate) {
           console.log(`[CAMPAIGN WEBHOOK] Processing price update`, priceUpdate);
-          const { stripePriceId, originalProductId, campaignId, campaignName, metadata } = priceUpdate;
+          const tenantId = priceUpdate?.metadata?.tenant || 'kraftverk';
+          const productId = priceUpdate.originalProductId;
+          const eventIdStr = eventId || stripeEvent?.id;
 
-          // 1) Upsert campaign entry
-          let campaignToUpdate = findCampaignById(campaignId);
+          if (await isProcessed(eventIdStr)) {
+            return NextResponse.json({ success: true, message: 'duplicate ignored' });
+          }
 
-          if (!campaignToUpdate) {
-            campaignToUpdate = {
-              id: campaignId,
-              name: campaignName || `Price Campaign ${campaignId}`,
-              type: 'discount',
+          await prisma.$transaction(async () => {
+            await upsertActivePrice({
+              tenantId,
+              productId,
+              campaignId: priceUpdate.campaignId,
+              stripePriceId: priceUpdate.stripePriceId,
+              metadata: priceUpdate.metadata,
+            });
+            await writeHistory({
+              tenantId,
+              productId,
+              campaignId: priceUpdate.campaignId,
+              stripePriceId: priceUpdate.stripePriceId,
               status: 'active',
-              discountType: 'percentage',
-              discountValue: 0,
-              products: originalProductId ? [originalProductId] : [],
-              startDate: new Date().toISOString(),
-              endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
-              usageCount: 0,
-              originalProductId,
-              stripePriceId,
-              createdAt: new Date().toISOString(),
-              updatedAt: new Date().toISOString(),
-            } as Campaign;
-
-            console.log(`✨ Upserting new campaign for price update: ${campaignToUpdate.name} (${stripePriceId})`);
-          } else {
-            campaignToUpdate.stripePriceId = stripePriceId;
-            campaignToUpdate.originalProductId = originalProductId;
-            campaignToUpdate.updatedAt = new Date().toISOString();
-            console.log(`💰 Updated existing campaign ${campaignToUpdate.name} with new price: ${stripePriceId}`);
-          }
-
-          addOrUpdateCampaign(campaignToUpdate);
-
-          // 2) Deactivate older campaigns for the same product to avoid picking outdated prices
-          if (originalProductId) {
-            deactivateOlderCampaignsForProduct(originalProductId, campaignToUpdate.id);
-          }
-
-          // Track
-          analytics.sendCustomEvent('campaign_price_upserted', {
-            campaignId: campaignToUpdate.id,
-            campaignName: campaignToUpdate.name,
-            stripePriceId,
-            originalProductId,
+              eventType: action,
+              eventId: eventIdStr,
+              payload: { priceUpdate },
+            });
+            await markProcessed(eventIdStr, action, tenantId);
           });
 
-          console.log(`✅ Successfully upserted campaign with price ID: ${stripePriceId}`);
+          analytics.sendCustomEvent('campaign_price_upserted', {
+            campaignId: priceUpdate.campaignId,
+            campaignName: priceUpdate.campaignName,
+            stripePriceId: priceUpdate.stripePriceId,
+            originalProductId: productId,
+          });
         }
-
-        return NextResponse.json({
-          success: true,
-          message: 'Price upserted',
-          priceId: priceUpdate?.stripePriceId,
-          activeCampaigns: getActiveCampaigns().length,
-        });
+        return NextResponse.json({ success: true, message: 'Price upserted' });
 
       case 'price.deleted':
-        // Deactivate campaign entries that reference this price
         if (priceUpdate?.stripePriceId) {
-          const priceIdToRemove = priceUpdate.stripePriceId;
-          const all = getActiveCampaigns();
-          let changed = false;
-          all.forEach(c => {
-            if (c.stripePriceId === priceIdToRemove) {
-              c.status = 'expired';
-              c.updatedAt = new Date().toISOString();
-              addOrUpdateCampaign(c);
-              changed = true;
+          const tenantId = priceUpdate?.metadata?.tenant || 'kraftverk';
+          const productId = priceUpdate.originalProductId;
+          const eventIdStr = eventId || stripeEvent?.id;
+          await prisma.$transaction(async () => {
+            const active = await getActivePrice(tenantId, productId);
+            if (active?.stripePriceId === priceUpdate.stripePriceId) {
+              await markActiveExpired(tenantId, productId);
             }
+            await writeHistory({
+              tenantId,
+              productId,
+              campaignId: active?.campaignId,
+              stripePriceId: priceUpdate.stripePriceId,
+              status: 'expired',
+              eventType: 'price.deleted',
+              eventId: eventIdStr,
+              payload: { priceUpdate },
+            });
+            await markProcessed(eventIdStr, 'price.deleted', tenantId);
           });
-
-          console.log(`🗓️ price.deleted processed for ${priceIdToRemove} — updated=${changed}`);
-
-          return NextResponse.json({
-            success: true,
-            message: 'Price deleted processed',
-            priceId: priceIdToRemove,
-            activeCampaigns: getActiveCampaigns().length,
-          });
+          return NextResponse.json({ success: true, message: 'Price deleted processed' });
         }
         return NextResponse.json({ error: 'Missing priceUpdate.stripePriceId' }, { status: 400 });
 
@@ -198,10 +161,10 @@ export async function GET(request: NextRequest) {
     });
 
     return NextResponse.json({ 
-      campaigns: campaignsWithPrices,
-      allCampaigns: allCampaigns, // Include all for debugging
-      count: campaignsWithPrices.length,
-      total: allCampaigns.length
+      // DB-backed: return active campaigns for default tenant
+      campaigns: await getAllActive('kraftverk'),
+      count: (await getAllActive('kraftverk')).length,
+      total: (await getAllActive('kraftverk')).length
     });
   } catch (error) {
     console.error('❌ Campaign fetch error:', error);

@@ -4,8 +4,8 @@ generator client {
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = "file:./dev.db"
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
 }
 
 model User {
@@ -68,6 +68,54 @@ model Trainer {
   image       String?
 }
 
+// --- Campaign Pricing (PostgreSQL source of truth) ---
+
+model CampaignPrice {
+  tenantId      String
+  productId     String
+  campaignId    String?
+  stripePriceId String
+  status        CampaignStatus @default(active)
+  validFrom     DateTime        @default(now())
+  validTo       DateTime?
+  metadata      Json?
+  createdAt     DateTime        @default(now())
+  updatedAt     DateTime        @updatedAt
+
+  @@id([tenantId, productId, status])
+  @@index([tenantId, productId])
+}
+
+model CampaignPriceHistory {
+  id            String   @id @default(cuid())
+  tenantId      String
+  productId     String
+  campaignId    String?
+  stripePriceId String
+  status        CampaignStatus
+  eventType     String
+  eventId       String?
+  payload       Json?
+  validFrom     DateTime
+  validTo       DateTime?
+  createdAt     DateTime @default(now())
+
+  @@index([tenantId, productId, createdAt])
+}
+
+model ProcessedWebhookEvent {
+  id        String   @id          // Stripe event id
+  type      String
+  tenantId  String
+  createdAt DateTime @default(now())
+}
+
+enum CampaignStatus {
+  active
+  expired
+  scheduled
+  paused
+}
 
 
 
