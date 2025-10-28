@@ -309,12 +309,19 @@ class EnhancedAnalyticsService {
       const geoData = await geoResponse.json();
       console.log('🌍 [DEBUG] Geo data received:', geoData);
       
-      const geoPayload = {
+      // Send geo data as a regular analytics event to the working endpoint
+      const geoEvent = {
+        type: 'page_view_geo',
         url: window.location.href,
         path: path,
+        title: document.title,
         timestamp: new Date().toISOString(),
-        tenant: TENANT_ID,
-        geo: {
+        referrer: document.referrer,
+        userAgent: navigator.userAgent,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+        properties: {
+          // Include geo data in properties
           country: geoData.country_name,
           countryCode: geoData.country_code,
           region: geoData.region,
@@ -322,31 +329,29 @@ class EnhancedAnalyticsService {
           latitude: geoData.latitude,
           longitude: geoData.longitude,
           timezone: geoData.timezone,
+          sessionId: this.sessionId,
+          userId: this.userId,
+          source: this.getTrafficSource(),
+          device: this.getDeviceType(),
+          loadTime: performance.now() - this.startTime,
         },
-        referrer: document.referrer,
-        userAgent: navigator.userAgent,
-        screenWidth: window.screen.width,
-        screenHeight: window.screen.height,
+      };
+
+      const geoPayload = {
+        tenant: TENANT_ID,
+        events: [geoEvent]
       };
 
       console.log('🌍 [DEBUG] Enhanced analytics geo payload to send:', JSON.stringify(geoPayload, null, 2));
-      console.log('🌍 [DEBUG] Sending to geo endpoint:', GEO_ENDPOINT);
+      console.log('🌍 [DEBUG] Sending to working analytics endpoint:', ANALYTICS_ENDPOINT);
 
-      // Get CSRF token for geo endpoint too
-      const csrfToken = this.getCSRFToken();
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'X-Tenant': TENANT_ID,
-      };
-      
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-      }
-
-      const response = await fetch(GEO_ENDPOINT, {
+      // Use the same working endpoint as regular analytics
+      const response = await fetch(ANALYTICS_ENDPOINT, {
         method: 'POST',
-        headers,
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant': TENANT_ID,
+        },
         body: JSON.stringify(geoPayload),
       });
 

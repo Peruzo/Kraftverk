@@ -140,56 +140,20 @@ class AnalyticsService {
       const geoData = await geoResponse.json();
       console.log('🌍 [DEBUG] Geo data received:', geoData);
       
-      // Send geo-tracked page view to the correct endpoint
-      const geoPayload = {
-        url: window.location.href,
+      // Send geo data as a regular analytics event to the working endpoint
+      console.log('🌍 [DEBUG] Sending geo data as analytics event...');
+      this.sendEvent('page_view_geo', {
         path: path || window.location.pathname,
-        timestamp: new Date().toISOString(),
-        tenant: TENANT_ID,
-        geo: {
-          country: geoData.country_name,
-          countryCode: geoData.country_code,
-          region: geoData.region,
-          city: geoData.city,
-          latitude: geoData.latitude,
-          longitude: geoData.longitude,
-          timezone: geoData.timezone,
-        },
-        referrer: document.referrer,
-        userAgent: navigator.userAgent,
-        screenWidth: window.screen.width,
-        screenHeight: window.screen.height,
-      };
-
-      console.log('🌍 [DEBUG] Geo payload to send:', JSON.stringify(geoPayload, null, 2));
-      console.log('🌍 [DEBUG] Sending to geo endpoint:', GEO_ENDPOINT);
-
-      const response = await fetch(GEO_ENDPOINT, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant': TENANT_ID,
-        },
-        body: JSON.stringify(geoPayload),
+        country: geoData.country_name,
+        countryCode: geoData.country_code,
+        region: geoData.region,
+        city: geoData.city,
+        latitude: geoData.latitude,
+        longitude: geoData.longitude,
+        timezone: geoData.timezone,
       });
 
-      console.log('🌍 [DEBUG] Geo response status:', response.status);
-      console.log('🌍 [DEBUG] Geo response headers:', Object.fromEntries(response.headers.entries()));
-
-      const responseText = await response.text();
-      console.log('🌍 [DEBUG] Geo response body:', responseText);
-
-      if (response.ok) {
-        console.log('✅ [SUCCESS] Geo page view tracked successfully');
-        try {
-          const result = JSON.parse(responseText);
-          console.log('✅ [SUCCESS] Geo parsed response:', result);
-        } catch (parseError) {
-          console.log('✅ [SUCCESS] Geo response (non-JSON):', responseText);
-        }
-      } else {
-        console.error('❌ [ERROR] Geo page view tracking failed:', response.status, responseText);
-      }
+      console.log('✅ [SUCCESS] Geo data sent as analytics event');
     } catch (error) {
       console.error('❌ [ERROR] Network error during geo tracking:', error);
       console.error('❌ [ERROR] Geo error details:', {
