@@ -67,6 +67,27 @@ class EnhancedAnalyticsService {
 
   // Old API key methods removed - now using simplified authentication
 
+  private getCSRFToken(): string | null {
+    if (typeof window === 'undefined') return null;
+    
+    // Try to get CSRF token from meta tag
+    const metaTag = document.querySelector('meta[name="csrf-token"]');
+    if (metaTag) {
+      return metaTag.getAttribute('content');
+    }
+    
+    // Try to get CSRF token from cookie
+    const cookies = document.cookie.split(';');
+    for (const cookie of cookies) {
+      const [name, value] = cookie.trim().split('=');
+      if (name === 'csrf-token' || name === '_token') {
+        return value;
+      }
+    }
+    
+    return null;
+  }
+
   private getSessionId(): string {
     if (typeof window === 'undefined') return '';
     
@@ -202,12 +223,28 @@ class EnhancedAnalyticsService {
     console.log('🔍 [DEBUG] Sending to endpoint:', PAGEVIEW_ENDPOINT);
 
     try {
+      // Get CSRF token from meta tag or cookie
+      const csrfToken = this.getCSRFToken();
+      console.log('🔍 [DEBUG] CSRF token found:', csrfToken ? 'Yes' : 'No');
+      if (csrfToken) {
+        console.log('🔍 [DEBUG] CSRF token value:', csrfToken.substring(0, 10) + '...');
+      }
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Tenant': TENANT_ID,
+      };
+      
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+        console.log('🔍 [DEBUG] Adding X-CSRF-Token header');
+      } else {
+        console.log('🔍 [DEBUG] No CSRF token available, trying without it');
+      }
+
       const response = await fetch(PAGEVIEW_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant': TENANT_ID,
-        },
+        headers,
         body: JSON.stringify(payload),
       });
 
@@ -295,12 +332,21 @@ class EnhancedAnalyticsService {
       console.log('🌍 [DEBUG] Enhanced analytics geo payload to send:', JSON.stringify(geoPayload, null, 2));
       console.log('🌍 [DEBUG] Sending to geo endpoint:', GEO_ENDPOINT);
 
+      // Get CSRF token for geo endpoint too
+      const csrfToken = this.getCSRFToken();
+      
+      const headers: Record<string, string> = {
+        'Content-Type': 'application/json',
+        'X-Tenant': TENANT_ID,
+      };
+      
+      if (csrfToken) {
+        headers['X-CSRF-Token'] = csrfToken;
+      }
+
       const response = await fetch(GEO_ENDPOINT, {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-Tenant': TENANT_ID,
-        },
+        headers,
         body: JSON.stringify(geoPayload),
       });
 
