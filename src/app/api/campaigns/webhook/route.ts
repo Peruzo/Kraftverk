@@ -145,26 +145,20 @@ export async function POST(request: NextRequest) {
 // GET endpoint to fetch active campaigns
 export async function GET(request: NextRequest) {
   try {
-    // Return all campaigns with price IDs (both active and for price lookup)
-    // This allows checkout to find campaign prices
-    const allCampaigns = getActiveCampaigns();
-    const campaignsWithPrices = allCampaigns.filter(campaign => 
-      campaign.stripePriceId && campaign.originalProductId
-    );
-
-    console.log(`📊 Total campaigns in store: ${allCampaigns.length}`);
-    console.log(`📊 Campaigns with prices: ${campaignsWithPrices.length}`);
+    // DB-backed: fetch from PostgreSQL
+    const active = await getAllActive('kraftverk');
+    
+    console.log(`📊 Total active campaigns: ${active.length}`);
     
     // Log all campaigns for debugging
-    allCampaigns.forEach(campaign => {
-      console.log(`   - ${campaign.id}: ${campaign.originalProductId} → ${campaign.stripePriceId}`);
+    active.forEach(campaign => {
+      console.log(`   - ${campaign.campaignId}: ${campaign.productId} → ${campaign.stripePriceId}`);
     });
 
     return NextResponse.json({ 
-      // DB-backed: return active campaigns for default tenant
-      campaigns: await getAllActive('kraftverk'),
-      count: (await getAllActive('kraftverk')).length,
-      total: (await getAllActive('kraftverk')).length
+      campaigns: active,
+      count: active.length,
+      total: active.length
     });
   } catch (error) {
     console.error('❌ Campaign fetch error:', error);
