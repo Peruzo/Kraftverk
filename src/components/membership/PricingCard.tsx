@@ -11,6 +11,7 @@ import {
   formatDiscount,
   type Campaign 
 } from "@/lib/campaigns";
+import { getCampaignPriceForProduct } from "@/lib/campaign-price-service";
 import styles from "./PricingCard.module.css";
 
 type PricingCardProps = {
@@ -24,23 +25,52 @@ export default function PricingCard({ membership, onSelect }: PricingCardProps) 
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    async function loadCampaigns() {
+    async function loadCampaignData() {
       try {
+        // Prefer local store (persisted) check for campaign price
+        const result = await getCampaignPriceForProduct('kraftverk', membership.id);
+        if (result?.hasCampaignPrice && result.priceId) {
+          // Fetch price from server-side API to compute amount in SEK
+          const res = await fetch(`/api/price?id=${encodeURIComponent(result.priceId)}`, { cache: 'no-store' });
+          if (res.ok) {
+            const price = await res.json();
+            if (typeof price.unit_amount === 'number') {
+              const amountSek = Math.round(price.unit_amount / 100);
+              setCampaign({
+                id: result.campaignId || 'campaign',
+                name: result.campaignName || 'Kampanj',
+                type: 'discount',
+                status: 'active',
+                discountType: 'fixed',
+                discountValue: Math.max(0, membership.price - amountSek),
+                products: [membership.id],
+                startDate: new Date().toISOString(),
+                endDate: new Date(Date.now() + 365*24*60*60*1000).toISOString(),
+                stripePriceId: result.priceId,
+                originalProductId: membership.id,
+                usageCount: 0,
+              });
+              setDiscountedPrice(amountSek);
+            }
+          }
+          return;
+        }
+
+        // Fallback to the legacy approach if no persisted campaign price
         const campaigns = await fetchActiveCampaigns();
         const applicable = findApplicableCampaign(membership.id, campaigns);
-        
         if (applicable) {
           setCampaign(applicable);
           setDiscountedPrice(calculateDiscountedPrice(membership.price, applicable));
         }
       } catch (error) {
-        console.error('Failed to load campaigns:', error);
+        console.error('Failed to load campaign price:', error);
       } finally {
         setIsLoading(false);
       }
     }
-    
-    loadCampaigns();
+
+    loadCampaignData();
   }, [membership.id, membership.price]);
 
   const handleSelect = () => {
