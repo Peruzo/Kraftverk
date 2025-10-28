@@ -22,7 +22,7 @@ export async function GET(request: NextRequest) {
 
     console.log('🧪 [DEBUG] Pageview payload:', JSON.stringify(pageviewPayload, null, 2));
 
-    const pageviewResponse = await fetch('https://source-database.onrender.com/api/analytics/pageviews', {
+    const pageviewResponse = await fetch('https://source-database.onrender.com/api/ingest/analytics', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',

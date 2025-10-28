@@ -4,7 +4,7 @@
  * Comprehensive data collection for customer portal integration
  */
 
-const PAGEVIEW_ENDPOINT = 'https://source-database.onrender.com/api/analytics/pageviews';
+const ANALYTICS_ENDPOINT = 'https://source-database.onrender.com/api/ingest/analytics';
 const GEO_ENDPOINT = 'https://source-database.onrender.com/api/statistics/track-pageview';
 const TENANT_ID = 'kraftverk';
 
@@ -220,7 +220,7 @@ class EnhancedAnalyticsService {
     };
 
     console.log('🔍 [DEBUG] Enhanced analytics payload to send:', JSON.stringify(payload, null, 2));
-    console.log('🔍 [DEBUG] Sending to endpoint:', PAGEVIEW_ENDPOINT);
+    console.log('🔍 [DEBUG] Sending to endpoint:', ANALYTICS_ENDPOINT);
 
     try {
       // Get CSRF token from meta tag or cookie
@@ -242,7 +242,7 @@ class EnhancedAnalyticsService {
         console.log('🔍 [DEBUG] No CSRF token available, trying without it');
       }
 
-      const response = await fetch(PAGEVIEW_ENDPOINT, {
+      const response = await fetch(ANALYTICS_ENDPOINT, {
         method: 'POST',
         headers,
         body: JSON.stringify(payload),

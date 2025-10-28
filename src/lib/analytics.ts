@@ -4,7 +4,7 @@
  * Updated to use simplified authentication (no API keys needed!)
  */
 
-const PAGEVIEW_ENDPOINT = 'https://source-database.onrender.com/api/analytics/pageviews';
+const ANALYTICS_ENDPOINT = 'https://source-database.onrender.com/api/ingest/analytics';
 const GEO_ENDPOINT = 'https://source-database.onrender.com/api/statistics/track-pageview';
 const TENANT_ID = 'kraftverk';
 
@@ -80,10 +80,10 @@ class AnalyticsService {
     };
 
     console.log('🔍 [DEBUG] Payload to send:', JSON.stringify(payload, null, 2));
-    console.log('🔍 [DEBUG] Sending to endpoint:', PAGEVIEW_ENDPOINT);
+    console.log('🔍 [DEBUG] Sending to endpoint:', ANALYTICS_ENDPOINT);
 
     try {
-      const response = await fetch(PAGEVIEW_ENDPOINT, {
+      const response = await fetch(ANALYTICS_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

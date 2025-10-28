@@ -19,8 +19,8 @@ export async function GET(request: NextRequest) {
       events: [testEvent]
     };
 
-    // Test pageview endpoint
-    const pageviewResponse = await fetch('https://source-database.onrender.com/api/analytics/pageviews', {
+    // Test analytics endpoint
+    const pageviewResponse = await fetch('https://source-database.onrender.com/api/ingest/analytics', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
