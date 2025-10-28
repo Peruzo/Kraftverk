@@ -4,7 +4,8 @@
  * Updated to use simplified authentication (no API keys needed!)
  */
 
-const ANALYTICS_ENDPOINT = 'https://source-database.onrender.com/api/ingest/analytics';
+const PAGEVIEW_ENDPOINT = 'https://source-database.onrender.com/api/analytics/pageviews';
+const GEO_ENDPOINT = 'https://source-database.onrender.com/api/statistics/track-pageview';
 const TENANT_ID = 'kraftverk';
 
 interface AnalyticsEvent {
@@ -70,10 +71,10 @@ class AnalyticsService {
     };
 
     try {
-      console.log('📤 Sending analytics to:', ANALYTICS_ENDPOINT);
+      console.log('📤 Sending analytics to:', PAGEVIEW_ENDPOINT);
       console.log('📊 Payload:', JSON.stringify(payload, null, 2));
       
-      const response = await fetch(ANALYTICS_ENDPOINT, {
+      const response = await fetch(PAGEVIEW_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -96,58 +97,52 @@ class AnalyticsService {
 
   // Track page views with optional geo data
   async trackPageView(path?: string) {
-    // Try to get geo data first
+    // Send regular page view first
+    this.sendEvent('page_view', { path: path || window.location.pathname });
+
+    // Try to get geo data and send to geo endpoint
     try {
       const geoResponse = await fetch('https://ipapi.co/json/');
       const geoData = await geoResponse.json();
       
-      // Send page view with geo data
-      const event: AnalyticsEvent = {
-        type: 'page_view',
+      // Send geo-tracked page view to the correct endpoint
+      const geoPayload = {
         url: window.location.href,
         path: path || window.location.pathname,
-        title: document.title,
         timestamp: new Date().toISOString(),
+        tenant: TENANT_ID,
+        geo: {
+          country: geoData.country_name,
+          countryCode: geoData.country_code,
+          region: geoData.region,
+          city: geoData.city,
+          latitude: geoData.latitude,
+          longitude: geoData.longitude,
+          timezone: geoData.timezone,
+        },
         referrer: document.referrer,
         userAgent: navigator.userAgent,
         screenWidth: window.screen.width,
         screenHeight: window.screen.height,
-        // Geo data
-        country: geoData.country_name,
-        region: geoData.region,
-        city: geoData.city,
-        latitude: geoData.latitude,
-        longitude: geoData.longitude,
-        timezone: geoData.timezone,
-        postalCode: geoData.postal,
       };
 
-      const payload = {
-        tenant: TENANT_ID,
-        events: [event]
-      };
-
-      const response = await fetch(ANALYTICS_ENDPOINT, {
+      const response = await fetch(GEO_ENDPOINT, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'X-Tenant': TENANT_ID,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(geoPayload),
       });
 
       if (response.ok) {
         const result = await response.json();
-        console.log('🌍 Page view with geo tracked:', result);
+        console.log('🌍 Geo page view tracked:', result);
       } else {
         console.error('❌ Geo page view failed:', await response.text());
-        // Fallback to regular page view
-        this.sendEvent('page_view', { path: path || window.location.pathname });
       }
     } catch (error) {
-      console.error('❌ Geo tracking failed, falling back to regular tracking:', error);
-      // Fallback to regular page view without geo
-      this.sendEvent('page_view', { path: path || window.location.pathname });
+      console.error('❌ Geo tracking failed:', error);
     }
   }
 

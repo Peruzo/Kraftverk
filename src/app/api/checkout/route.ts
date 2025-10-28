@@ -163,6 +163,7 @@ export async function POST(request: NextRequest) {
       cancel_url: `${origin}/checkout`,
       metadata: {
         tenant: "kraftverk",
+        tenantId: "kraftverk",
         membershipId: membershipId || "",
         classInstanceId: classInstanceId || "",
         productId: productId || "",

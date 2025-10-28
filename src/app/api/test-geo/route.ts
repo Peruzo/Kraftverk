@@ -2,55 +2,85 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Test the new simplified analytics format
+    // Test the correct pageview endpoint
     const testEvent = {
-      type: 'test_event',
+      type: 'page_view',
       url: 'https://kraftverk.com/test',
       path: '/test',
-      title: 'Test Page',
       timestamp: new Date().toISOString(),
       referrer: 'https://google.com',
       userAgent: 'Mozilla/5.0 (Test Browser)',
       screenWidth: 1920,
-      screenHeight: 1080,
-      properties: {
-        test: true,
-        message: 'Testing simplified analytics'
-      }
+      screenHeight: 1080
     };
 
-    const payload = {
+    const pageviewPayload = {
       tenant: 'kraftverk',
       events: [testEvent]
     };
 
-    // Test sending to the new endpoint
-    const response = await fetch('https://source-database.onrender.com/api/ingest/analytics', {
+    // Test pageview endpoint
+    const pageviewResponse = await fetch('https://source-database.onrender.com/api/analytics/pageviews', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'X-Tenant': 'kraftverk',
       },
-      body: JSON.stringify(payload),
+      body: JSON.stringify(pageviewPayload),
     });
 
-    if (response.ok) {
-      const result = await response.json();
-      return NextResponse.json({
-        success: true,
-        message: 'Simplified analytics test successful',
-        payload: payload,
-        response: result
-      });
-    } else {
-      const errorText = await response.text();
-      return NextResponse.json({
-        success: false,
-        error: 'Analytics test failed',
-        details: errorText,
-        payload: payload
-      }, { status: 500 });
-    }
+    // Test geo endpoint
+    const geoPayload = {
+      url: 'https://kraftverk.com/test',
+      path: '/test',
+      timestamp: new Date().toISOString(),
+      tenant: 'kraftverk',
+      geo: {
+        country: 'Sweden',
+        countryCode: 'SE',
+        region: 'Stockholm',
+        city: 'Stockholm',
+        latitude: 59.3293,
+        longitude: 18.0686,
+        timezone: 'Europe/Stockholm'
+      },
+      referrer: 'https://google.com',
+      userAgent: 'Mozilla/5.0 (Test Browser)',
+      screenWidth: 1920,
+      screenHeight: 1080
+    };
+
+    const geoResponse = await fetch('https://source-database.onrender.com/api/statistics/track-pageview', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant': 'kraftverk',
+      },
+      body: JSON.stringify(geoPayload),
+    });
+
+    const results = {
+      pageview: {
+        success: pageviewResponse.ok,
+        status: pageviewResponse.status,
+        response: pageviewResponse.ok ? await pageviewResponse.json() : await pageviewResponse.text()
+      },
+      geo: {
+        success: geoResponse.ok,
+        status: geoResponse.status,
+        response: geoResponse.ok ? await geoResponse.json() : await geoResponse.text()
+      }
+    };
+
+    return NextResponse.json({
+      success: true,
+      message: 'Analytics endpoints test completed',
+      payloads: {
+        pageview: pageviewPayload,
+        geo: geoPayload
+      },
+      results: results
+    });
     
   } catch (error) {
     return NextResponse.json({
