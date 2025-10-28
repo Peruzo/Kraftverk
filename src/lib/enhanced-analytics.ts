@@ -55,10 +55,6 @@ class EnhancedAnalyticsService {
   private userId?: string;
   private startTime: number;
   private performanceObserver?: PerformanceObserver;
-  private analyticsApiKey: string;
-  private statisticsApiKey: string;
-  private analyticsHmacSecret: string;
-  private statisticsHmacSecret: string;
 
   constructor() {
     this.domain = typeof window !== 'undefined' ? window.location.hostname : '';
@@ -66,46 +62,10 @@ class EnhancedAnalyticsService {
     this.userId = this.getHashedUserId();
     this.startTime = performance.now();
     
-    // Get API keys from environment
-    this.analyticsApiKey = this.getAnalyticsApiKey();
-    this.statisticsApiKey = this.getStatisticsApiKey();
-    this.analyticsHmacSecret = this.getAnalyticsHmacSecret();
-    this.statisticsHmacSecret = this.getStatisticsHmacSecret();
-    
     this.initPerformanceTracking();
   }
 
-  private getAnalyticsApiKey(): string {
-    if (typeof window === 'undefined') return '';
-    // Extract analytics API key from ANALYTICS_API_KEYS environment variable
-    const analyticsKeys = process.env.NEXT_PUBLIC_ANALYTICS_API_KEYS || '';
-    const match = analyticsKeys.match(/kraftverk:([^,]+)/);
-    return match ? match[1] : '';
-  }
-
-  private getStatisticsApiKey(): string {
-    if (typeof window === 'undefined') return '';
-    // Extract statistics API key from STATISTICS_API_KEYS environment variable
-    const statisticsKeys = process.env.NEXT_PUBLIC_STATISTICS_API_KEYS || '';
-    const match = statisticsKeys.match(/kraftverk:([^,]+)/);
-    return match ? match[1] : '';
-  }
-
-  private getAnalyticsHmacSecret(): string {
-    if (typeof window === 'undefined') return '';
-    return process.env.NEXT_PUBLIC_ANALYTICS_HMAC_SECRET || '';
-  }
-
-  private getStatisticsHmacSecret(): string {
-    if (typeof window === 'undefined') return '';
-    return process.env.NEXT_PUBLIC_STATISTICS_HMAC_SECRET || '';
-  }
-
-  private generateHmacSignature(data: string, secret: string): string {
-    // Simple HMAC implementation for client-side
-    // In production, this should be done server-side for security
-    return btoa(data + secret).substr(0, 32);
-  }
+  // Old API key methods removed - now using simplified authentication
 
   private getSessionId(): string {
     if (typeof window === 'undefined') return '';
@@ -278,53 +238,7 @@ class EnhancedAnalyticsService {
     }
   }
 
-  private async sendToAnalytics(event: AnalyticsEvent): Promise<void> {
-    if (!this.analyticsApiKey) return;
-
-    try {
-      const response = await fetch(`${CUSTOMER_PORTAL_URL}/api/pageviews/track`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.analyticsApiKey,
-          'X-HMAC-Signature': this.generateHmacSignature(JSON.stringify(event), this.analyticsHmacSecret),
-        },
-        body: JSON.stringify(event),
-      });
-
-      if (response.ok) {
-        console.log('📊 Analytics tracked:', event.event_type, event.event_props);
-      } else {
-        console.warn('Analytics tracking failed:', response.status);
-      }
-    } catch (error) {
-      console.error('❌ Analytics error:', error);
-    }
-  }
-
-  private async sendToStatistics(event: AnalyticsEvent): Promise<void> {
-    if (!this.statisticsApiKey) return;
-
-    try {
-      const response = await fetch(`${CUSTOMER_PORTAL_URL}/api/statistics/track`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'X-API-Key': this.statisticsApiKey,
-          'X-HMAC-Signature': this.generateHmacSignature(JSON.stringify(event), this.statisticsHmacSecret),
-        },
-        body: JSON.stringify(event),
-      });
-
-      if (response.ok) {
-        console.log('📈 Statistics tracked:', event.event_type, event.event_props);
-      } else {
-        console.warn('Statistics tracking failed:', response.status);
-      }
-    } catch (error) {
-      console.error('❌ Statistics error:', error);
-    }
-  }
+  // Old methods removed - now using simplified sendEvent method above
 
   // ===== PAGE ANALYTICS =====
 
