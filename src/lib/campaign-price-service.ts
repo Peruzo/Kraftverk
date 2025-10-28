@@ -93,11 +93,25 @@ function isCampaignActive(campaign: Campaign): boolean {
  * @returns Array of active campaigns
  */
 export async function getActiveCampaignsForTenant(tenant: string): Promise<Campaign[]> {
-  const allCampaigns = getActiveCampaigns();
+  // DB-backed: fetch from PostgreSQL
+  const active = await getAllActive(tenant);
   
-  return allCampaigns.filter(campaign => 
-    campaign.status === 'active' && 
-    isCampaignActive(campaign)
-  );
+  // Transform to Campaign type for compatibility
+  return active.map(c => ({
+    id: c.campaignId || 'campaign',
+    name: (c.metadata as any)?.campaign_name || 'Kampanj',
+    type: 'discount' as const,
+    status: 'active' as const,
+    discountType: 'fixed' as const,
+    discountValue: 0,
+    products: [c.productId],
+    startDate: (c.validFrom as unknown as Date)?.toString?.() || new Date().toISOString(),
+    endDate: c.validTo ? (c.validTo as unknown as Date).toString?.() : new Date(Date.now()+365*24*60*60*1000).toISOString(),
+    stripePriceId: c.stripePriceId,
+    originalProductId: c.productId,
+    usageCount: 0,
+    createdAt: undefined,
+    updatedAt: undefined,
+  } as unknown as Campaign));
 }
 
