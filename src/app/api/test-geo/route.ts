@@ -2,28 +2,61 @@ import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(request: NextRequest) {
   try {
-    // Extract client IP for testing
-    const clientIp = request.headers.get('x-forwarded-for') || 
-                    request.headers.get('x-real-ip') || 
-                    request.ip || 
-                    '127.0.0.1';
-    
-    // Test geo lookup
-    const geoResponse = await fetch(`http://ip-api.com/json/${clientIp}?fields=status,country,countryCode,region,regionName,city,lat,lon,timezone,zip`);
-    const geoData = await geoResponse.json();
-    
-    return NextResponse.json({
-      success: true,
-      clientIp,
-      geoData,
-      message: 'Geo tracking test successful'
+    // Test the new simplified analytics format
+    const testEvent = {
+      type: 'test_event',
+      url: 'https://kraftverk.com/test',
+      path: '/test',
+      title: 'Test Page',
+      timestamp: new Date().toISOString(),
+      referrer: 'https://google.com',
+      userAgent: 'Mozilla/5.0 (Test Browser)',
+      screenWidth: 1920,
+      screenHeight: 1080,
+      properties: {
+        test: true,
+        message: 'Testing simplified analytics'
+      }
+    };
+
+    const payload = {
+      tenant: 'kraftverk',
+      events: [testEvent]
+    };
+
+    // Test sending to the new endpoint
+    const response = await fetch('https://source-database.onrender.com/api/ingest/analytics', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'X-Tenant': 'kraftverk',
+      },
+      body: JSON.stringify(payload),
     });
+
+    if (response.ok) {
+      const result = await response.json();
+      return NextResponse.json({
+        success: true,
+        message: 'Simplified analytics test successful',
+        payload: payload,
+        response: result
+      });
+    } else {
+      const errorText = await response.text();
+      return NextResponse.json({
+        success: false,
+        error: 'Analytics test failed',
+        details: errorText,
+        payload: payload
+      }, { status: 500 });
+    }
     
   } catch (error) {
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : 'Unknown error',
-      message: 'Geo tracking test failed'
+      message: 'Analytics test failed'
     }, { status: 500 });
   }
 }
