@@ -13,6 +13,9 @@ export interface Campaign {
   products: string[];
   startDate: string;
   endDate: string;
+  // Timestamps for newest-price selection and upsert logic
+  createdAt?: string;
+  updatedAt?: string;
   stripeCouponId?: string;
   stripePromotionCodeId?: string;
   stripePriceId?: string; // Dynamic campaign price from Stripe

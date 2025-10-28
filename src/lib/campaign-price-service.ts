@@ -37,12 +37,16 @@ export async function getCampaignPriceForProduct(
       console.log(`     Active: ${isCampaignActive(c)}`);
     });
     
-    // Find campaign that matches this product
-    const campaign = allCampaigns.find(c => 
-      c.originalProductId === productId && 
-      c.status === 'active' &&
-      isCampaignActive(c)
-    );
+  // Find newest active campaign for this product (by updatedAt/createdAt desc)
+  const matching = allCampaigns
+    .filter(c => c.originalProductId === productId && c.status === 'active' && isCampaignActive(c))
+    .sort((a, b) => {
+      const aTime = new Date(a.updatedAt || a.createdAt || a.startDate).getTime();
+      const bTime = new Date(b.updatedAt || b.createdAt || b.startDate).getTime();
+      return bTime - aTime; // newest first
+    });
+
+  const campaign = matching[0];
     
     if (campaign) {
       console.log(`✅ Found matching campaign: ${campaign.id}`);

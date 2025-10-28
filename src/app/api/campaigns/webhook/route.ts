@@ -5,7 +5,8 @@ import {
   getActiveCampaigns, 
   addOrUpdateCampaign, 
   removeCampaign, 
-  findCampaignById 
+  findCampaignById,
+  deactivateOlderCampaignsForProduct,
 } from "@/lib/campaigns-store";
 
 // Verify API key middleware
@@ -77,31 +78,16 @@ export async function POST(request: NextRequest) {
 
       case 'price.updated':
       case 'price.created':
-        // Handle Stripe price update - link to campaign
+        // Handle Stripe price update - UPSERT behavior
         if (priceUpdate) {
+          console.log(`[CAMPAIGN WEBHOOK] Processing price update`, priceUpdate);
           const { stripePriceId, originalProductId, campaignId, campaignName, metadata } = priceUpdate;
-          
-          // Find the campaign to update
+
+          // 1) Upsert campaign entry
           let campaignToUpdate = findCampaignById(campaignId);
-          
-          if (campaignToUpdate) {
-            // Update existing campaign with price
-            campaignToUpdate.stripePriceId = stripePriceId;
-            campaignToUpdate.originalProductId = originalProductId;
-            addOrUpdateCampaign(campaignToUpdate);
-            
-            console.log(`💰 Price updated for campaign ${campaignToUpdate.name}: ${stripePriceId}`);
-            
-            // Track price update
-            analytics.sendCustomEvent('campaign_price_updated', {
-              campaignId: campaignToUpdate.id,
-              campaignName: campaignToUpdate.name,
-              stripePriceId,
-              originalProductId,
-            });
-          } else {
-            // Create new campaign entry for price-only update
-            const newCampaign = {
+
+          if (!campaignToUpdate) {
+            campaignToUpdate = {
               id: campaignId,
               name: campaignName || `Price Campaign ${campaignId}`,
               type: 'discount',
@@ -110,32 +96,45 @@ export async function POST(request: NextRequest) {
               discountValue: 0,
               products: originalProductId ? [originalProductId] : [],
               startDate: new Date().toISOString(),
-              endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(), // 1 year from now
-              stripePriceId: stripePriceId,
-              originalProductId: originalProductId,
+              endDate: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000).toISOString(),
               usageCount: 0,
-            } as Campaign;
-            
-            addOrUpdateCampaign(newCampaign);
-            
-            console.log(`✨ Created new campaign entry for price update: ${newCampaign.name} (${stripePriceId})`);
-            console.log(`   Metadata:`, metadata);
-            
-            // Track price creation
-            analytics.sendCustomEvent('campaign_created', {
-              campaignId: newCampaign.id,
-              campaignName: newCampaign.name,
-              stripePriceId,
               originalProductId,
-            });
+              stripePriceId,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            } as Campaign;
+
+            console.log(`✨ Upserting new campaign for price update: ${campaignToUpdate.name} (${stripePriceId})`);
+          } else {
+            campaignToUpdate.stripePriceId = stripePriceId;
+            campaignToUpdate.originalProductId = originalProductId;
+            campaignToUpdate.updatedAt = new Date().toISOString();
+            console.log(`💰 Updated existing campaign ${campaignToUpdate.name} with new price: ${stripePriceId}`);
           }
+
+          addOrUpdateCampaign(campaignToUpdate);
+
+          // 2) Deactivate older campaigns for the same product to avoid picking outdated prices
+          if (originalProductId) {
+            deactivateOlderCampaignsForProduct(originalProductId, campaignToUpdate.id);
+          }
+
+          // Track
+          analytics.sendCustomEvent('campaign_price_upserted', {
+            campaignId: campaignToUpdate.id,
+            campaignName: campaignToUpdate.name,
+            stripePriceId,
+            originalProductId,
+          });
+
+          console.log(`✅ Successfully upserted campaign with price ID: ${stripePriceId}`);
         }
-        
-        return NextResponse.json({ 
-          success: true, 
-          message: 'Price updated',
+
+        return NextResponse.json({
+          success: true,
+          message: 'Price upserted',
           priceId: priceUpdate?.stripePriceId,
-          activeCampaigns: getActiveCampaigns().length
+          activeCampaigns: getActiveCampaigns().length,
         });
 
       default:
