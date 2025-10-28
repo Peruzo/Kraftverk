@@ -140,6 +140,32 @@ export async function POST(request: NextRequest) {
           activeCampaigns: getActiveCampaigns().length,
         });
 
+      case 'price.deleted':
+        // Deactivate campaign entries that reference this price
+        if (priceUpdate?.stripePriceId) {
+          const priceIdToRemove = priceUpdate.stripePriceId;
+          const all = getActiveCampaigns();
+          let changed = false;
+          all.forEach(c => {
+            if (c.stripePriceId === priceIdToRemove) {
+              c.status = 'expired';
+              c.updatedAt = new Date().toISOString();
+              addOrUpdateCampaign(c);
+              changed = true;
+            }
+          });
+
+          console.log(`🗓️ price.deleted processed for ${priceIdToRemove} — updated=${changed}`);
+
+          return NextResponse.json({
+            success: true,
+            message: 'Price deleted processed',
+            priceId: priceIdToRemove,
+            activeCampaigns: getActiveCampaigns().length,
+          });
+        }
+        return NextResponse.json({ error: 'Missing priceUpdate.stripePriceId' }, { status: 400 });
+
       default:
         return NextResponse.json({ 
           error: 'Unknown action' 
@@ -170,7 +196,7 @@ export async function GET(request: NextRequest) {
     allCampaigns.forEach(campaign => {
       console.log(`   - ${campaign.id}: ${campaign.originalProductId} → ${campaign.stripePriceId}`);
     });
-    
+
     return NextResponse.json({ 
       campaigns: campaignsWithPrices,
       allCampaigns: allCampaigns, // Include all for debugging

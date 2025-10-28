@@ -56,8 +56,10 @@ export default function PricingCard({ membership, onSelect }: PricingCardProps) 
           return;
         }
 
-        // Fallback to the legacy approach if no persisted campaign price
-        const campaigns = await fetchActiveCampaigns();
+        // Fallback: query server active endpoint (hydrated) for freshest state
+        const activeRes = await fetch('/api/campaigns/active', { cache: 'no-store' });
+        const activeJson = activeRes.ok ? (await activeRes.json()) : { campaigns: [] };
+        const campaigns = activeJson.campaigns?.length ? activeJson.campaigns : await fetchActiveCampaigns();
         const applicable = findApplicableCampaign(membership.id, campaigns);
         if (applicable) {
           setCampaign(applicable);
