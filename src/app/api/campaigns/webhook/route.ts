@@ -116,7 +116,7 @@ export async function POST(request: NextRequest) {
             await writeHistory({
               tenantId,
               productId,
-              campaignId: active?.campaignId || undefined,
+              campaignId: active?.campaignId,
               stripePriceId: priceUpdate.stripePriceId,
               status: 'expired',
               eventType: 'price.deleted',

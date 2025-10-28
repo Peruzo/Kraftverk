@@ -33,7 +33,7 @@ export async function upsertActivePrice(args: {
 export async function writeHistory(args: {
   tenantId: string;
   productId: string;
-  campaignId?: string;
+  campaignId?: string | null;
   stripePriceId: string;
   status: CampaignStatus;
   eventType: string;
