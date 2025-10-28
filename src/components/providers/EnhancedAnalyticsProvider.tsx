@@ -16,19 +16,30 @@ export default function EnhancedAnalyticsProvider({ children }: { children: Reac
 
   // Track page views and route changes
   useEffect(() => {
+    console.log('🔍 [DEBUG] EnhancedAnalyticsProvider useEffect triggered');
+    console.log('🔍 [DEBUG] Current pathname:', pathname);
+    console.log('🔍 [DEBUG] Previous pathname:', previousPathname.current);
+    console.log('🔍 [DEBUG] Analytics object:', analytics);
+    
     if (previousPathname.current !== pathname) {
+      console.log('🔍 [DEBUG] Pathname changed, tracking page view...');
+      
       // Track time on previous page
       const timeOnPreviousPage = Math.round((Date.now() - pageStartTime.current) / 1000);
       if (timeOnPreviousPage > 0) {
+        console.log('🔍 [DEBUG] Tracking time on previous page:', timeOnPreviousPage, 'seconds');
         analytics.trackTimeOnPage(timeOnPreviousPage);
       }
 
       // Track new page view
+      console.log('🔍 [DEBUG] Calling analytics.trackPageView with pathname:', pathname);
       analytics.trackPageView(pathname);
       
       // Reset timer for new page
       pageStartTime.current = Date.now();
       previousPathname.current = pathname;
+    } else {
+      console.log('🔍 [DEBUG] Pathname unchanged, skipping page view tracking');
     }
   }, [pathname]);
 

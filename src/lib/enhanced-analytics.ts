@@ -1,11 +1,12 @@
 /**
  * Enhanced Analytics Service for Kraftverk Enterprise
+ * Updated to use simplified authentication (no API keys needed!)
  * Comprehensive data collection for customer portal integration
- * Supports both Analytics and Statistics endpoints for enterprise customers
  */
 
-const CUSTOMER_PORTAL_URL = 'https://source-database.onrender.com';
-const TENANT = 'kraftverk';
+const PAGEVIEW_ENDPOINT = 'https://source-database.onrender.com/api/analytics/pageviews';
+const GEO_ENDPOINT = 'https://source-database.onrender.com/api/statistics/track-pageview';
+const TENANT_ID = 'kraftverk';
 
 interface AnalyticsEvent {
   event_id: string;
@@ -201,31 +202,80 @@ class EnhancedAnalyticsService {
   }
 
   private async sendEvent(eventType: string, eventProps: Record<string, any> = {}): Promise<void> {
-    if (typeof window === 'undefined') return;
+    if (typeof window === 'undefined') {
+      console.log('🔍 [DEBUG] sendEvent called on server side - skipping');
+      return;
+    }
 
-    const event: AnalyticsEvent = {
-      event_id: crypto.randomUUID(),
-      tenant_id: TENANT,
-      session_id: this.sessionId,
-      user_id: this.userId,
+    console.log('🔍 [DEBUG] Starting enhanced analytics event tracking...');
+    console.log('🔍 [DEBUG] Event type:', eventType);
+    console.log('🔍 [DEBUG] Event props:', eventProps);
+    console.log('🔍 [DEBUG] Current URL:', window.location.href);
+    console.log('🔍 [DEBUG] Current path:', window.location.pathname);
+
+    const event = {
+      type: eventType,
+      url: window.location.href,
+      path: window.location.pathname,
+      title: document.title,
       timestamp: new Date().toISOString(),
-      page: window.location.pathname,
       referrer: document.referrer,
-      source: this.getTrafficSource(),
-      device: this.getDeviceType(),
-      event_type: eventType,
-      event_props: eventProps,
-      user_agent: navigator.userAgent,
-      load_time: performance.now() - this.startTime,
-      custom_dimensions: (window as any).CUSTOM_DIMENSIONS || {},
-      domain: this.domain,
+      userAgent: navigator.userAgent,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      properties: {
+        ...eventProps,
+        sessionId: this.sessionId,
+        userId: this.userId,
+        source: this.getTrafficSource(),
+        device: this.getDeviceType(),
+        loadTime: performance.now() - this.startTime,
+      },
     };
 
-    // Send to both Analytics and Statistics endpoints for enterprise customers
-    await Promise.all([
-      this.sendToAnalytics(event),
-      this.sendToStatistics(event)
-    ]);
+    const payload = {
+      tenant: TENANT_ID,
+      events: [event]
+    };
+
+    console.log('🔍 [DEBUG] Enhanced analytics payload to send:', JSON.stringify(payload, null, 2));
+    console.log('🔍 [DEBUG] Sending to endpoint:', PAGEVIEW_ENDPOINT);
+
+    try {
+      const response = await fetch(PAGEVIEW_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant': TENANT_ID,
+        },
+        body: JSON.stringify(payload),
+      });
+
+      console.log('🔍 [DEBUG] Enhanced analytics response status:', response.status);
+      console.log('🔍 [DEBUG] Enhanced analytics response headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('🔍 [DEBUG] Enhanced analytics response body:', responseText);
+
+      if (response.ok) {
+        console.log('✅ [SUCCESS] Enhanced analytics tracked successfully:', eventType);
+        try {
+          const result = JSON.parse(responseText);
+          console.log('✅ [SUCCESS] Enhanced analytics parsed response:', result);
+        } catch (parseError) {
+          console.log('✅ [SUCCESS] Enhanced analytics response (non-JSON):', responseText);
+        }
+      } else {
+        console.error('❌ [ERROR] Enhanced analytics failed:', response.status, responseText);
+      }
+    } catch (error) {
+      console.error('❌ [ERROR] Network error during enhanced analytics tracking:', error);
+      console.error('❌ [ERROR] Enhanced analytics error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown',
+      });
+    }
   }
 
   private async sendToAnalytics(event: AnalyticsEvent): Promise<void> {
@@ -279,6 +329,12 @@ class EnhancedAnalyticsService {
   // ===== PAGE ANALYTICS =====
 
   trackPageView(path?: string, pageTitle?: string): void {
+    console.log('🔍 [DEBUG] Enhanced analytics trackPageView called');
+    console.log('🔍 [DEBUG] Path parameter:', path);
+    console.log('🔍 [DEBUG] Page title parameter:', pageTitle);
+    console.log('🔍 [DEBUG] Window location pathname:', window.location.pathname);
+
+    // Send regular page view
     this.sendEvent('page_view', {
       page_title: pageTitle || document.title,
       page_category: this.getPageCategory(),
@@ -286,6 +342,79 @@ class EnhancedAnalyticsService {
       search: window.location.search,
       hash: window.location.hash,
     });
+
+    // Also send geo-tracked page view
+    this.sendGeoPageView(path || window.location.pathname);
+  }
+
+  private async sendGeoPageView(path: string): Promise<void> {
+    console.log('🌍 [DEBUG] Enhanced analytics sending geo page view...');
+    
+    try {
+      console.log('🌍 [DEBUG] Fetching geo data from ipapi.co...');
+      const geoResponse = await fetch('https://ipapi.co/json/');
+      console.log('🌍 [DEBUG] Geo API response status:', geoResponse.status);
+      
+      const geoData = await geoResponse.json();
+      console.log('🌍 [DEBUG] Geo data received:', geoData);
+      
+      const geoPayload = {
+        url: window.location.href,
+        path: path,
+        timestamp: new Date().toISOString(),
+        tenant: TENANT_ID,
+        geo: {
+          country: geoData.country_name,
+          countryCode: geoData.country_code,
+          region: geoData.region,
+          city: geoData.city,
+          latitude: geoData.latitude,
+          longitude: geoData.longitude,
+          timezone: geoData.timezone,
+        },
+        referrer: document.referrer,
+        userAgent: navigator.userAgent,
+        screenWidth: window.screen.width,
+        screenHeight: window.screen.height,
+      };
+
+      console.log('🌍 [DEBUG] Enhanced analytics geo payload to send:', JSON.stringify(geoPayload, null, 2));
+      console.log('🌍 [DEBUG] Sending to geo endpoint:', GEO_ENDPOINT);
+
+      const response = await fetch(GEO_ENDPOINT, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'X-Tenant': TENANT_ID,
+        },
+        body: JSON.stringify(geoPayload),
+      });
+
+      console.log('🌍 [DEBUG] Enhanced analytics geo response status:', response.status);
+      console.log('🌍 [DEBUG] Enhanced analytics geo response headers:', Object.fromEntries(response.headers.entries()));
+
+      const responseText = await response.text();
+      console.log('🌍 [DEBUG] Enhanced analytics geo response body:', responseText);
+
+      if (response.ok) {
+        console.log('✅ [SUCCESS] Enhanced analytics geo page view tracked successfully');
+        try {
+          const result = JSON.parse(responseText);
+          console.log('✅ [SUCCESS] Enhanced analytics geo parsed response:', result);
+        } catch (parseError) {
+          console.log('✅ [SUCCESS] Enhanced analytics geo response (non-JSON):', responseText);
+        }
+      } else {
+        console.error('❌ [ERROR] Enhanced analytics geo page view tracking failed:', response.status, responseText);
+      }
+    } catch (error) {
+      console.error('❌ [ERROR] Network error during enhanced analytics geo tracking:', error);
+      console.error('❌ [ERROR] Enhanced analytics geo error details:', {
+        message: error instanceof Error ? error.message : 'Unknown error',
+        stack: error instanceof Error ? error.stack : undefined,
+        name: error instanceof Error ? error.name : 'Unknown',
+      });
+    }
   }
 
   private getPageCategory(): string {
