@@ -6,7 +6,7 @@ export const STRIPE_PRICE_MAPPING = {
   "flex": "price_1SKwUeP6vvUUervCMqO3Xv7v", // 599 SEK/month
   "studio-plus": "price_1SL2xzP6vvUUervCtqpdm124", // 899 SEK/month
   "dagpass": "price_1SKwweP6vvUUervCxH3vVYhG", // 149 SEK one-time
-  "test-kund": "price_1SKx8zP6vvUUervCjfwpzNUJ", // 499 SEK/month
+  "test-kund": "price_1SNZ9tP6vvUUervC25e3efk4", // Test Kampanj (new Stripe price)
   
   // Class booking prices
   "class-booking": "price_1SKhYSP6vvUUervCTpvpt0QO", // 99 SEK one-time (using base price for now)
@@ -52,7 +52,7 @@ export function getProductDisplayName(productType: string): string {
     "flex": "Flex Medlemskap", 
     "studio-plus": "Studio+ Medlemskap",
     "dagpass": "Dagpass",
-    "test-kund": "Test Kund Medlemskap",
+    "test-kund": "Test Kampanj Medlemskap",
     "class-booking": "Klassbokning",
     "gym-shirt": "Gym Tröja",
     "gym-hoodie": "Gym Sweatshirt",

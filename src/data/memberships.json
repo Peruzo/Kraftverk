@@ -67,7 +67,7 @@
   },
   {
     "id": "test-kund",
-    "name": "Test Kund",
+    "name": "Test Kampanj",
     "price": 499,
     "bookingWindowDays": 10,
     "guestAllowance": 4,
