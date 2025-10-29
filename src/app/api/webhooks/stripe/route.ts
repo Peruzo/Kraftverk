@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { headers } from "next/headers";
-import { upsertActivePrice, writeHistory, markProcessed } from "@/src/lib/campaigns-repo";
-import { getProductKeyFromStripeProductId } from "@/src/lib/product-mapping";
+import { upsertActivePrice, writeHistory, markProcessed } from "@/lib/campaigns-repo";
+import { getProductKeyFromStripeProductId } from "@/lib/product-mapping";
 
 /**
  * Stripe Webhook Handler
