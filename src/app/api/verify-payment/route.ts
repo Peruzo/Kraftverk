@@ -86,6 +86,7 @@ export async function GET(request: NextRequest) {
       userId: session.metadata?.userId || '',
       paymentMethod: 'card',
       customerId: session.customer || '',
+      paymentIntentId: paymentIntent || '',
       timestamp: new Date().toISOString()
     });
 
