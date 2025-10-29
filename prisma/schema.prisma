@@ -17,6 +17,8 @@ model User {
   membership   Membership @relation(fields: [membershipId], references: [id])
   bookings     Booking[]
   createdAt    DateTime @default(now())
+
+  @@schema("public")
 }
 
 model Membership {
@@ -27,6 +29,8 @@ model Membership {
   guestAllowance    Int
   features          String  // JSON string array
   users             User[]
+
+  @@schema("public")
 }
 
 model ClassTemplate {
@@ -37,6 +41,8 @@ model ClassTemplate {
   intensity   String
   zoneProfile String?         // JSON string
   instances   ClassInstance[]
+
+  @@schema("public")
 }
 
 model ClassInstance {
@@ -49,6 +55,8 @@ model ClassInstance {
   spots      Int
   waitlist   String    // JSON string array
   bookings   Booking[]
+
+  @@schema("public")
 }
 
 model Booking {
@@ -59,6 +67,8 @@ model Booking {
   classInstance   ClassInstance @relation(fields: [classInstanceId], references: [id])
   status          String
   bookedAt        DateTime      @default(now())
+
+  @@schema("public")
 }
 
 model Trainer {
@@ -67,6 +77,8 @@ model Trainer {
   bio         String
   specialties String // JSON string array
   image       String?
+
+  @@schema("public")
 }
 
 // --- Campaign Pricing (PostgreSQL source of truth) ---

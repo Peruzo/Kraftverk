@@ -3,7 +3,6 @@ import { analytics } from "@/lib/analytics";
 import { Campaign } from "@/lib/campaigns";
 // DB-backed repo (Postgres)
 import { prisma } from "@/lib/prisma";
-import type { CampaignPrice } from "@prisma/client";
 import { 
   upsertActivePrice,
   writeHistory,
@@ -13,6 +12,9 @@ import {
   getActivePrice,
   markActiveExpired
 } from "@/lib/campaigns-repo";
+
+// Type for campaign price from database
+type CampaignPrice = Awaited<ReturnType<typeof getAllActive>>[0];
 
 // Verify API key middleware
 function verifyApiKey(request: NextRequest): boolean {
