@@ -47,6 +47,7 @@ function SuccessPageContent() {
           userId,
           paymentMethod,
           customerId,
+          paymentIntentId,
           timestamp
         } = apiResponse;
         
@@ -79,6 +80,7 @@ function SuccessPageContent() {
           userId,
           paymentMethod,
           customerId,
+          paymentIntentId,
           timestamp
         };
 
