@@ -89,16 +89,44 @@ function SuccessPageContent() {
         const alreadySent = localStorage.getItem(analyticsKey);
         
         if (!alreadySent) {
-          console.log('📤 Sending analytics for session:', sessionId);
+          console.log('📤 Sending payment data to customer portal for session:', sessionId);
           
-          // Send via analytics service
+          // Send payment data to customer portal in the required format
+          const portalPayload = {
+            event: "customer_payment",
+            data: paymentData,
+            domain: "kraftverk-test-kund.onrender.com",
+            tenant: "kraftverk"
+          };
+
+          try {
+            const portalResponse = await fetch('https://source-database.onrender.com/api/analytics/track', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify(portalPayload)
+            });
+            
+            if (portalResponse.ok) {
+              const result = await portalResponse.json();
+              console.log('✅ Payment data sent to customer portal successfully:', result);
+            } else {
+              const errorText = await portalResponse.text();
+              console.error('❌ Failed to send payment data to customer portal:', portalResponse.status, errorText);
+            }
+          } catch (error) {
+            console.error('❌ Error sending payment data to customer portal:', error);
+          }
+          
+          // Also send via analytics service for internal tracking
           analytics.sendCustomEvent('customer_payment', paymentData);
           
           // Mark as sent to prevent duplicates
           localStorage.setItem(analyticsKey, 'true');
-          console.log('✅ Analytics sent and marked as sent for session:', sessionId);
+          console.log('✅ Payment data sent and marked as sent for session:', sessionId);
         } else {
-          console.log('⚠️ Analytics already sent for session:', sessionId, '- skipping duplicate');
+          console.log('⚠️ Payment data already sent for session:', sessionId, '- skipping duplicate');
         }
       } catch (error) {
         console.error("Payment verification failed:", error);
