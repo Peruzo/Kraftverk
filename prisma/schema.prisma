@@ -6,6 +6,7 @@ generator client {
 datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
+  schemas  = ["app", "public"]
 }
 
 model User {
@@ -82,6 +83,7 @@ model CampaignPrice {
   createdAt     DateTime        @default(now())
   updatedAt     DateTime        @updatedAt
 
+  @@schema("app")
   @@id([tenantId, productId, status])
   @@index([tenantId, productId])
 }
@@ -100,6 +102,7 @@ model CampaignPriceHistory {
   validTo       DateTime?
   createdAt     DateTime @default(now())
 
+  @@schema("app")
   @@index([tenantId, productId, createdAt])
 }
 
@@ -108,6 +111,8 @@ model ProcessedWebhookEvent {
   type      String
   tenantId  String
   createdAt DateTime @default(now())
+
+  @@schema("app")
 }
 
 enum CampaignStatus {
@@ -115,6 +120,8 @@ enum CampaignStatus {
   expired
   scheduled
   paused
+
+  @@schema("app")
 }
 
 

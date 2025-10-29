@@ -1,110 +1,70 @@
--- CreateTable
-CREATE TABLE "User" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "email" TEXT NOT NULL,
-    "name" TEXT,
-    "membershipId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "User_membershipId_fkey" FOREIGN KEY ("membershipId") REFERENCES "Membership" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
+-- CreateSchema
+CREATE SCHEMA IF NOT EXISTS "app";
+
+-- CreateEnum (create in current schema, then move to app)
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'CampaignStatus') THEN
+        CREATE TYPE "CampaignStatus" AS ENUM ('active', 'expired', 'scheduled', 'paused');
+    END IF;
+END $$;
+
+-- Move enum to app schema if not already there
+DO $$
+BEGIN
+    IF EXISTS (SELECT 1 FROM pg_type t 
+               JOIN pg_namespace n ON t.typnamespace = n.oid 
+               WHERE t.typname = 'CampaignStatus' AND n.nspname != 'app') THEN
+        ALTER TYPE "CampaignStatus" SET SCHEMA "app";
+    END IF;
+END $$;
 
 -- CreateTable
-CREATE TABLE "Membership" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "price" INTEGER NOT NULL,
-    "bookingWindowDays" INTEGER NOT NULL,
-    "guestAllowance" INTEGER NOT NULL,
-    "features" TEXT NOT NULL
-);
-
--- CreateTable
-CREATE TABLE "ClassTemplate" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "title" TEXT NOT NULL,
-    "category" TEXT NOT NULL,
-    "duration" INTEGER NOT NULL,
-    "intensity" TEXT NOT NULL,
-    "zoneProfile" TEXT
-);
-
--- CreateTable
-CREATE TABLE "ClassInstance" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "templateId" TEXT NOT NULL,
-    "studioId" TEXT NOT NULL,
-    "trainerId" TEXT NOT NULL,
-    "startTime" DATETIME NOT NULL,
-    "spots" INTEGER NOT NULL,
-    "waitlist" TEXT NOT NULL,
-    CONSTRAINT "ClassInstance_templateId_fkey" FOREIGN KEY ("templateId") REFERENCES "ClassTemplate" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "Booking" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "userId" TEXT NOT NULL,
-    "classInstanceId" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
-    "bookedAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    CONSTRAINT "Booking_userId_fkey" FOREIGN KEY ("userId") REFERENCES "User" ("id") ON DELETE RESTRICT ON UPDATE CASCADE,
-    CONSTRAINT "Booking_classInstanceId_fkey" FOREIGN KEY ("classInstanceId") REFERENCES "ClassInstance" ("id") ON DELETE RESTRICT ON UPDATE CASCADE
-);
-
--- CreateTable
-CREATE TABLE "Trainer" (
-    "id" TEXT NOT NULL PRIMARY KEY,
-    "name" TEXT NOT NULL,
-    "bio" TEXT NOT NULL,
-    "specialties" TEXT NOT NULL,
-    "image" TEXT
-);
-
--- CreateTable
-CREATE TABLE "CampaignPrice" (
+CREATE TABLE IF NOT EXISTS "app"."CampaignPrice" (
     "tenantId" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "campaignId" TEXT,
     "stripePriceId" TEXT NOT NULL,
-    "status" TEXT NOT NULL DEFAULT 'active',
-    "validFrom" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "validTo" DATETIME,
+    "status" "app"."CampaignStatus" NOT NULL DEFAULT 'active',
+    "validFrom" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "validTo" TIMESTAMP(3),
     "metadata" JSONB,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    "updatedAt" DATETIME NOT NULL,
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    "updatedAt" TIMESTAMP(3) NOT NULL,
 
-    PRIMARY KEY ("tenantId", "productId", "status")
+    CONSTRAINT "CampaignPrice_pkey" PRIMARY KEY ("tenantId","productId","status")
 );
 
 -- CreateTable
-CREATE TABLE "CampaignPriceHistory" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS "app"."CampaignPriceHistory" (
+    "id" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
     "productId" TEXT NOT NULL,
     "campaignId" TEXT,
     "stripePriceId" TEXT NOT NULL,
-    "status" TEXT NOT NULL,
+    "status" "app"."CampaignStatus" NOT NULL,
     "eventType" TEXT NOT NULL,
     "eventId" TEXT,
     "payload" JSONB,
-    "validFrom" DATETIME NOT NULL,
-    "validTo" DATETIME,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "validFrom" TIMESTAMP(3) NOT NULL,
+    "validTo" TIMESTAMP(3),
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "CampaignPriceHistory_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateTable
-CREATE TABLE "ProcessedWebhookEvent" (
-    "id" TEXT NOT NULL PRIMARY KEY,
+CREATE TABLE IF NOT EXISTS "app"."ProcessedWebhookEvent" (
+    "id" TEXT NOT NULL,
     "type" TEXT NOT NULL,
     "tenantId" TEXT NOT NULL,
-    "createdAt" DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+    "createdAt" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
+
+    CONSTRAINT "ProcessedWebhookEvent_pkey" PRIMARY KEY ("id")
 );
 
 -- CreateIndex
-CREATE UNIQUE INDEX "User_email_key" ON "User"("email");
+CREATE INDEX IF NOT EXISTS "CampaignPrice_tenantId_productId_idx" ON "app"."CampaignPrice"("tenantId", "productId");
 
 -- CreateIndex
-CREATE INDEX "CampaignPrice_tenantId_productId_idx" ON "CampaignPrice"("tenantId", "productId");
-
--- CreateIndex
-CREATE INDEX "CampaignPriceHistory_tenantId_productId_createdAt_idx" ON "CampaignPriceHistory"("tenantId", "productId", "createdAt");
+CREATE INDEX IF NOT EXISTS "CampaignPriceHistory_tenantId_productId_createdAt_idx" ON "app"."CampaignPriceHistory"("tenantId", "productId", "createdAt");
