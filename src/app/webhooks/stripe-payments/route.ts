@@ -139,10 +139,12 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
     const userId = session.metadata?.userId || "";
     
     // Get line items for inventory data
-    const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
-    const lineItem = lineItems.data[0]; // Get first item
-    const priceId = lineItem?.price?.id || "";
-    const quantity = lineItem?.quantity || 1;
+  const lineItems = await stripe.checkout.sessions.listLineItems(session.id);
+  const lineItem = lineItems.data[0]; // Get first item
+  const priceId = lineItem?.price?.id || "";
+  const quantity = lineItem?.quantity || 1;
+  const productName = (lineItem?.description || lineItem?.price?.nickname || productType || "").toString();
+  const productName = (lineItem?.description || lineItem?.price?.nickname || productType || "").toString();
     
     // Map price ID to product ID for inventory tracking
     const productMapping: Record<string, string> = {
@@ -169,6 +171,7 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
       amount: session.amount_total || 0,
       currency: session.currency,
       productType,
+      productName,
       userId,
       paymentMethod: session.payment_method_types?.[0] || "card",
       status: "completed",
@@ -298,6 +301,7 @@ async function sendRefundDataToPortal(stripe: Stripe, session: Stripe.Checkout.S
       amount: session.amount_total || 0,
       currency: session.currency,
       productType,
+      productName: (lineItem?.description || lineItem?.price?.nickname || productType || "").toString(),
       userId,
       paymentMethod: session.payment_method_types?.[0] || "card",
       status: "failed",
