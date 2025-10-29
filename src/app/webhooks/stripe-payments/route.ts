@@ -144,7 +144,6 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
   const priceId = lineItem?.price?.id || "";
   const quantity = lineItem?.quantity || 1;
   const productName = (lineItem?.description || lineItem?.price?.nickname || productType || "").toString();
-  const productName = (lineItem?.description || lineItem?.price?.nickname || productType || "").toString();
     
     // Map price ID to product ID for inventory tracking
     const productMapping: Record<string, string> = {
