@@ -214,51 +214,44 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
       console.error(`❌ Failed to send customer data to portal:`, await portalResponse.text());
     }
 
-    // Also send payment data to analytics endpoint in the required format
-    const analyticsPayload = {
-      event: "customer_payment",
-      data: {
-        sessionId: session.id,
-        amount: session.amount_total,
-        currency: session.currency,
-        status: "completed",
-        customerEmail: session.customer_email,
-        customerName: session.metadata?.customerName || "",
-        cardBrand: "", // Will be filled by payment intent details
-        cardLast4: "",
-        cardExpMonth: "",
-        cardExpYear: "",
-        productType: session.metadata?.productType || "",
-        productName: customerData.productName || "",
-        priceId: priceId,
-        productId: productId,
-        quantity: quantity,
-        inventoryAction: "purchase",
-        userId: session.metadata?.userId || "",
-        paymentMethod: session.payment_method_types?.[0] || "card",
-        customerId: session.customer || "",
-        timestamp: new Date().toISOString()
-      },
-      domain: "kraftverk-test-kund.onrender.com",
-      tenant: "kraftverk"
+    // Also send payment data to customer portal webhook in the correct format
+    const webhookPayload = {
+      tenant: "kraftverk",
+      customerEmail: session.customer_email,
+      customerName: session.metadata?.customerName || "",
+      sessionId: session.id,
+      amount: Math.round(session.amount_total / 100), // Convert cents to SEK
+      currency: session.currency,
+      productType: session.metadata?.productType || "",
+      productName: customerData.productName || "",
+      priceId: priceId,
+      productId: productId,
+      quantity: quantity,
+      inventoryAction: "purchase",
+      userId: session.metadata?.userId || "",
+      paymentMethod: session.payment_method_types?.[0] || "card",
+      status: "completed",
+      timestamp: new Date().toISOString(),
+      paymentIntentId: session.payment_intent || "",
+      customerId: session.customer || ""
     };
 
     try {
-      const analyticsResponse = await fetch("https://source-database.onrender.com/api/analytics/track", {
+      const webhookResponse = await fetch("https://source-database.onrender.com/webhooks/kraftverk-customer-data", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify(analyticsPayload),
+        body: JSON.stringify(webhookPayload),
       });
 
-      if (analyticsResponse.ok) {
-        console.log(`✅ Payment data sent to analytics endpoint successfully`);
+      if (webhookResponse.ok) {
+        console.log(`✅ Payment data sent to customer portal webhook successfully`);
       } else {
-        console.error(`❌ Failed to send payment data to analytics endpoint:`, await analyticsResponse.text());
+        console.error(`❌ Failed to send payment data to customer portal webhook:`, await webhookResponse.text());
       }
     } catch (error) {
-      console.error("Error sending payment data to analytics endpoint:", error);
+      console.error("Error sending payment data to customer portal webhook:", error);
     }
 
   } catch (error) {

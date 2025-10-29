@@ -2,18 +2,14 @@ import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(request: NextRequest) {
   try {
-    // Test payment data in the format the customer portal team expects
-    const testPaymentData = {
-      sessionId: "cs_test_12345",
-      amount: 49900, // 499 SEK in cents
-      currency: "SEK",
-      status: "completed",
+    // Test payment data in the correct webhook format
+    const webhookPayload = {
+      tenant: "kraftverk",
       customerEmail: "test.customer@example.com",
       customerName: "Test Customer",
-      cardBrand: "visa",
-      cardLast4: "1234",
-      cardExpMonth: "12",
-      cardExpYear: "25",
+      sessionId: "cs_test_12345",
+      amount: 499, // 499 SEK (not cents)
+      currency: "SEK",
       productType: "gym_hoodie",
       productName: "Kraftverk Gym Hoodie",
       priceId: "price_1SL5CpP6vvUUervCS0hGh5i4",
@@ -22,28 +18,23 @@ export async function POST(request: NextRequest) {
       inventoryAction: "purchase",
       userId: "user_123",
       paymentMethod: "card",
-      customerId: "cus_123",
-      timestamp: new Date().toISOString()
-    };
-
-    const portalPayload = {
-      event: "customer_payment",
-      data: testPaymentData,
-      domain: "kraftverk-test-kund.onrender.com",
-      tenant: "kraftverk"
+      status: "completed",
+      timestamp: new Date().toISOString(),
+      paymentIntentId: "pi_test_12345",
+      customerId: "cus_test_12345"
     };
 
     console.log('🧪 Testing payment data format...');
-    console.log('📤 Sending to customer portal analytics endpoint...');
-    console.log('📋 Payload:', JSON.stringify(portalPayload, null, 2));
+    console.log('📤 Sending to customer portal webhook endpoint...');
+    console.log('📋 Payload:', JSON.stringify(webhookPayload, null, 2));
 
-    // Send to customer portal analytics endpoint
-    const response = await fetch('https://source-database.onrender.com/api/analytics/track', {
+    // Send to customer portal webhook endpoint
+    const response = await fetch('https://source-database.onrender.com/webhooks/kraftverk-customer-data', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify(portalPayload)
+      body: JSON.stringify(webhookPayload)
     });
 
     const responseText = await response.text();
@@ -54,10 +45,10 @@ export async function POST(request: NextRequest) {
       success: response.ok,
       status: response.status,
       response: responseText,
-      payload: portalPayload,
+      payload: webhookPayload,
       message: response.ok 
-        ? 'Payment data sent successfully to customer portal' 
-        : 'Failed to send payment data to customer portal'
+        ? 'Payment data sent successfully to customer portal webhook' 
+        : 'Failed to send payment data to customer portal webhook'
     });
 
   } catch (error) {

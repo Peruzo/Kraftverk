@@ -89,18 +89,32 @@ function SuccessPageContent() {
         const alreadySent = localStorage.getItem(analyticsKey);
         
         if (!alreadySent) {
-          console.log('📤 Sending payment data to customer portal for session:', sessionId);
+          console.log('📤 Sending payment data to customer portal webhook for session:', sessionId);
           
-          // Send payment data to customer portal in the required format
+          // Send payment data to customer portal webhook in the correct format
           const portalPayload = {
-            event: "customer_payment",
-            data: paymentData,
-            domain: "kraftverk-test-kund.onrender.com",
-            tenant: "kraftverk"
+            tenant: "kraftverk",
+            customerEmail: paymentData.customerEmail,
+            customerName: paymentData.customerName,
+            sessionId: paymentData.sessionId,
+            amount: Math.round(paymentData.amount / 100), // Convert cents to SEK
+            currency: paymentData.currency,
+            productType: paymentData.productType,
+            productName: paymentData.productName,
+            priceId: paymentData.priceId,
+            productId: paymentData.productId,
+            quantity: paymentData.quantity,
+            inventoryAction: paymentData.inventoryAction,
+            userId: paymentData.userId,
+            paymentMethod: paymentData.paymentMethod,
+            status: "completed",
+            timestamp: paymentData.timestamp,
+            paymentIntentId: paymentData.paymentIntentId || "",
+            customerId: paymentData.customerId
           };
 
           try {
-            const portalResponse = await fetch('https://source-database.onrender.com/api/analytics/track', {
+            const portalResponse = await fetch('https://source-database.onrender.com/webhooks/kraftverk-customer-data', {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json',
@@ -110,13 +124,13 @@ function SuccessPageContent() {
             
             if (portalResponse.ok) {
               const result = await portalResponse.json();
-              console.log('✅ Payment data sent to customer portal successfully:', result);
+              console.log('✅ Payment data sent to customer portal webhook successfully:', result);
             } else {
               const errorText = await portalResponse.text();
-              console.error('❌ Failed to send payment data to customer portal:', portalResponse.status, errorText);
+              console.error('❌ Failed to send payment data to customer portal webhook:', portalResponse.status, errorText);
             }
           } catch (error) {
-            console.error('❌ Error sending payment data to customer portal:', error);
+            console.error('❌ Error sending payment data to customer portal webhook:', error);
           }
           
           // Also send via analytics service for internal tracking
