@@ -67,7 +67,11 @@ export async function markProcessed(eventId?: string, type?: string, tenantId?: 
 }
 
 export async function getActivePrice(tenantId: string, productId: string) {
-  return prisma.campaignPrice.findFirst({ where: { tenantId, productId, status: "active" } });
+  // Always select the newest active price (defense in depth - should only be one active per product)
+  return prisma.campaignPrice.findFirst({ 
+    where: { tenantId, productId, status: "active" },
+    orderBy: { createdAt: "desc" }
+  });
 }
 
 export async function getAllActive(tenantId: string) {

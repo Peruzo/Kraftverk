@@ -94,6 +94,11 @@ export async function POST(request: NextRequest) {
             await markProcessed(eventIdStr, action, tenantId);
           });
 
+          console.log(`✅ Successfully upserted campaign with price ID ${priceUpdate.stripePriceId} for product ${productId}`);
+          if (priceUpdate.campaignId) {
+            console.log(`   Campaign ID: ${priceUpdate.campaignId}, Name: ${priceUpdate.campaignName || 'N/A'}`);
+          }
+
           analytics.sendCustomEvent('campaign_price_upserted', {
             campaignId: priceUpdate.campaignId,
             campaignName: priceUpdate.campaignName,
