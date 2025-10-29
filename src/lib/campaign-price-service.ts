@@ -51,6 +51,14 @@ export async function getCampaignPriceForProduct(
     
     if (campaign) {
       console.log(`✅ Found matching campaign: ${campaign.id}`);
+      console.log('   Active record', {
+        productId,
+        stripePriceId: active?.stripePriceId,
+        campaignId: active?.campaignId,
+        validFrom: active?.validFrom,
+        validTo: active?.validTo,
+        status: active?.status,
+      });
     } else {
       console.log(`❌ No matching campaign found for product: ${productId}`);
     }

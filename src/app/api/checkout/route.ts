@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getStripePriceId, getProductDisplayName } from "@/lib/stripe-config";
+import { getProductDisplayName } from "@/lib/stripe-config";
 import { analytics } from "@/lib/analytics";
 import { getCampaignPriceForProduct } from "@/lib/campaign-price-service";
+import { getStripeProductIdForKey } from "@/lib/product-mapping";
 
 function getStripeClient() {
   if (!process.env.STRIPE_SECRET_KEY) {
@@ -12,6 +13,21 @@ function getStripeClient() {
   return new Stripe(process.env.STRIPE_SECRET_KEY, {
     apiVersion: "2025-09-30.clover",
   });
+}
+
+async function getLatestActivePriceIdForProduct(productKey: string): Promise<string> {
+  const stripe = getStripeClient();
+  const productId = getStripeProductIdForKey(productKey);
+  if (!productId) {
+    throw new Error(`No Stripe Product ID configured for product key: ${productKey}`);
+  }
+  const prices = await stripe.prices.list({ product: productId, active: true, limit: 10 });
+  const sorted = prices.data.sort((a, b) => (b.created || 0) - (a.created || 0));
+  const latest = sorted[0];
+  if (!latest) {
+    throw new Error(`No active price found for product key: ${productKey} (Stripe product ${productId})`);
+  }
+  return latest.id;
 }
 
 export async function POST(request: NextRequest) {
@@ -40,10 +56,13 @@ export async function POST(request: NextRequest) {
     console.log(`🔍 Looking for campaign price for product: ${productType}`);
     const campaignPrice = await getCampaignPriceForProduct("kraftverk", productType);
     
-    // Use campaign price if available, otherwise use regular price
+    // Use campaign price if available, otherwise fetch newest active Stripe price dynamically
     const priceId = campaignPrice?.hasCampaignPrice 
       ? campaignPrice.priceId! 
-      : getStripePriceId(productType);
+      : await getLatestActivePriceIdForProduct(productType);
+    if (!campaignPrice?.hasCampaignPrice) {
+      console.log('🆕 [CHECKOUT] Fallback to latest active Stripe price for product', { productType, priceId });
+    }
     
     const productName = getProductDisplayName(productType);
     
@@ -52,7 +71,7 @@ export async function POST(request: NextRequest) {
       console.log(`🎯 Using campaign price: ${campaignPrice.priceId} for product: ${productType}`);
       console.log(`   Campaign: ${campaignPrice.campaignName} (${campaignPrice.campaignId})`);
     } else {
-      console.log(`💰 Using regular price: ${priceId} for product: ${productType}`);
+      console.log(`💰 Using latest active Stripe price: ${priceId} for product: ${productType}`);
     }
 
     // Track checkout initiation (don't fail if analytics fails)

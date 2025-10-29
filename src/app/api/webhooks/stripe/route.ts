@@ -1,6 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { headers } from "next/headers";
+import { upsertActivePrice, writeHistory, markProcessed } from "@/src/lib/campaigns-repo";
+import { getProductKeyFromStripeProductId } from "@/src/lib/product-mapping";
 
 /**
  * Stripe Webhook Handler
@@ -50,21 +52,67 @@ export async function POST(request: NextRequest) {
           currency: price.currency,
         });
         
-        // Check if this is a campaign price
-        if (price.metadata.original_price_id && price.metadata.source === 'customer_portal') {
-          console.log('🎯 This is a CAMPAIGN PRICE!');
-          console.log('   Campaign Name:', price.metadata.campaign_name);
-          console.log('   Original Price ID:', price.metadata.original_price_id);
-          console.log('   Tenant:', price.metadata.tenant);
-          
-          // Try to match to Kraftverk product
-          const productId = mapPriceIdToProductId(price.metadata.original_price_id);
-          console.log('   Mapped to Product ID:', productId);
-          
-          if (productId) {
-            console.log(`✅ Should send to Kraftverk campaigns webhook for product: ${productId}`);
+        // If created from customer portal, auto-upsert as active campaign price
+        if (price.metadata?.source === 'customer_portal') {
+          console.log('🧭 [STRIPE->KV] Campaign price from customer_portal detected', {
+            eventId: event.id,
+            stripePriceId: price.id,
+            original_price_id: price.metadata.original_price_id,
+            tenant: (price.metadata as any)?.tenant,
+          });
+          let originProductId: string | null = null;
+          try {
+            if (price.metadata.original_price_id) {
+              const original = await stripe.prices.retrieve(price.metadata.original_price_id);
+              originProductId = (original.product as string) || null;
+              console.log('🔗 Resolved original price → product', {
+                originalPriceId: price.metadata.original_price_id,
+                originProductId,
+              });
+            } else if (price.product) {
+              originProductId = price.product as string;
+              console.log('🔗 Using price.product as origin', { originProductId });
+            }
+          } catch (e) {
+            console.error('❌ Failed to resolve original/product for campaign price', e);
+          }
+
+          const productKey = originProductId ? getProductKeyFromStripeProductId(originProductId) : null;
+          console.log('🗺️ Product mapping result', { originProductId, productKey });
+
+          if (productKey) {
+            const tenantId = (price.metadata as any)?.tenant || 'kraftverk';
+            const campaignId = (price.metadata as any)?.campaign_id || undefined;
+            try {
+              await upsertActivePrice({
+                tenantId,
+                productId: productKey,
+                campaignId,
+                stripePriceId: price.id,
+                metadata: price.metadata,
+              });
+              await writeHistory({
+                tenantId,
+                productId: productKey,
+                campaignId,
+                stripePriceId: price.id,
+                status: 'active',
+                eventType: 'price.created',
+                eventId: event.id,
+                payload: { source: 'stripe.price.created' },
+              });
+              await markProcessed(event.id, 'price.created', tenantId);
+              console.log('✅ Upserted active campaign price', {
+                tenantId, productKey, campaignId, stripePriceId: price.id,
+              });
+            } catch (e) {
+              console.error('❌ Failed to upsert active price from Stripe event', e);
+            }
           } else {
-            console.log('❌ Could not map original_price_id to product ID');
+            console.log('❌ No productKey from mapping. Ensure STRIPE_PRODUCT_MAP/STRIPE_PRODUCT_* env is set correctly.', {
+              originProductId,
+              envPresent: Boolean(process.env.STRIPE_PRODUCT_MAP),
+            });
           }
         }
         break;
@@ -97,20 +145,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
-
-/**
- * Map Stripe Price ID to Kraftverk Product ID
- */
-function mapPriceIdToProductId(stripePriceId: string): string | null {
-  // This should match the prices in src/lib/stripe-config.ts
-  const priceToProductMap: Record<string, string> = {
-    'price_1SKx8zP6vvUUervCjfwpzNUJ': 'test-kund',
-    'price_1SKhYSP6vvUUervCTpvpt0QO': 'base',
-    'price_1SKwUeP6vvUUervCMqO3Xv7v': 'flex',
-    'price_1SL2xzP6vvUUervCtqpdm124': 'studio-plus',
-    'price_1SKwweP6vvUUervCxH3vVYhG': 'dagpass',
-  };
-  
-  return priceToProductMap[stripePriceId] || null;
-}
-
+// Removed hardcoded price -> product mapping; using env-based product mapping

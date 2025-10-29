@@ -31,6 +31,7 @@ export async function POST(request: NextRequest) {
   try {
     // No-op for DB path
     // Verify API key
+    console.log('📨 [PORTAL->KV] Campaign webhook received');
     if (!verifyApiKey(request)) {
       return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
     }
@@ -67,7 +68,16 @@ export async function POST(request: NextRequest) {
       case 'price.updated':
       case 'price.created':
         if (priceUpdate) {
-          console.log(`[CAMPAIGN WEBHOOK] Processing price update`, priceUpdate);
+          console.log(`[CAMPAIGN WEBHOOK] Processing price update`, {
+            action,
+            eventId: eventId || stripeEvent?.id,
+            originalProductId: priceUpdate.originalProductId,
+            stripePriceId: priceUpdate.stripePriceId,
+            tenant: priceUpdate?.metadata?.tenant,
+            source: priceUpdate?.metadata?.source,
+            validFrom: (priceUpdate as any)?.validFrom,
+            validTo: (priceUpdate as any)?.validTo,
+          });
           const tenantId = priceUpdate?.metadata?.tenant || 'kraftverk';
           const productId = priceUpdate.originalProductId;
           const eventIdStr = eventId || stripeEvent?.id;
