@@ -3,6 +3,7 @@ import { analytics } from "@/lib/analytics";
 import { Campaign } from "@/lib/campaigns";
 // DB-backed repo (Postgres)
 import { prisma } from "@/lib/prisma";
+import type { CampaignPrice } from "@prisma/client";
 import { 
   upsertActivePrice,
   writeHistory,
@@ -156,7 +157,7 @@ export async function GET(request: NextRequest) {
     console.log(`📊 Total active campaigns: ${active.length}`);
     
     // Log all campaigns for debugging
-    active.forEach(campaign => {
+    active.forEach((campaign: CampaignPrice) => {
       console.log(`   - ${campaign.campaignId}: ${campaign.productId} → ${campaign.stripePriceId}`);
     });
 
