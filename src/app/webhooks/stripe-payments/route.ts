@@ -166,7 +166,7 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
       customerEmail,
       customerName,
       sessionId: session.id,
-      amount: session.amount_total,
+      amount: session.amount_total || 0,
       currency: session.currency,
       productType,
       userId,
@@ -220,7 +220,7 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
       customerEmail: session.customer_email,
       customerName: session.metadata?.customerName || "",
       sessionId: session.id,
-      amount: Math.round(session.amount_total / 100), // Convert cents to SEK
+      amount: Math.round((session.amount_total || 0) / 100), // Convert cents to SEK
       currency: session.currency,
       productType: session.metadata?.productType || "",
       productName: customerData.productName || "",
@@ -295,7 +295,7 @@ async function sendRefundDataToPortal(stripe: Stripe, session: Stripe.Checkout.S
       customerEmail,
       customerName,
       sessionId: session.id,
-      amount: session.amount_total,
+      amount: session.amount_total || 0,
       currency: session.currency,
       productType,
       userId,
