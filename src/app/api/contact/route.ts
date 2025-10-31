@@ -28,21 +28,56 @@ export async function POST(request: NextRequest) {
       message: messageContent,
     };
 
+    // Try to get CSRF token first by making a GET request
+    let csrfToken: string | null = null;
+    try {
+      const csrfResponse = await fetch(
+        "https://source-database.onrender.com/api/messages",
+        {
+          method: "GET",
+          headers: {
+            "X-Tenant": "kraftverk",
+          },
+        }
+      );
+      
+      // Try to extract CSRF token from response headers or cookies
+      const csrfHeader = csrfResponse.headers.get("X-CSRF-Token");
+      if (csrfHeader) {
+        csrfToken = csrfHeader;
+      }
+    } catch (error) {
+      console.log("Could not fetch CSRF token, proceeding anyway");
+    }
+
+    // Prepare headers
+    const headers: Record<string, string> = {
+      "Content-Type": "application/json",
+      "X-Tenant": "kraftverk",
+    };
+
+    // Add CSRF token if we got one
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+    }
+
     // Send to customer portal
     const response = await fetch(
       "https://source-database.onrender.com/api/messages",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          // Try to get CSRF token from cookie or pass X-Tenant header
-          "X-Tenant": "kraftverk",
-        },
+        headers,
         body: JSON.stringify(payload),
       }
     );
 
-    const result = await response.json();
+    const responseText = await response.text();
+    let result;
+    try {
+      result = JSON.parse(responseText);
+    } catch {
+      result = { message: responseText };
+    }
 
     if (response.ok && result.success) {
       return NextResponse.json({
@@ -51,6 +86,23 @@ export async function POST(request: NextRequest) {
         message: "Meddelandet har skickats!",
       });
     } else {
+      console.error("Customer portal error:", {
+        status: response.status,
+        statusText: response.statusText,
+        response: result,
+      });
+      
+      // If CSRF error, provide helpful message
+      if (response.status === 403 && result.message?.includes("CSRF")) {
+        return NextResponse.json(
+          {
+            success: false,
+            message: "Kontakta support - CSRF-token problem. Meddelandet kunde inte skickas.",
+          },
+          { status: 403 }
+        );
+      }
+      
       return NextResponse.json(
         {
           success: false,
