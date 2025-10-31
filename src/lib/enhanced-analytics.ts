@@ -220,32 +220,33 @@ class EnhancedAnalyticsService {
     };
 
     console.log('🔍 [DEBUG] Enhanced analytics payload to send:', JSON.stringify(payload, null, 2));
-    console.log('🔍 [DEBUG] Sending to endpoint:', ANALYTICS_ENDPOINT);
+    console.log('🔍 [DEBUG] Using server-side API route to avoid CORS issues');
 
     try {
-      // Get CSRF token from meta tag or cookie
-      const csrfToken = this.getCSRFToken();
-      console.log('🔍 [DEBUG] CSRF token found:', csrfToken ? 'Yes' : 'No');
-      if (csrfToken) {
-        console.log('🔍 [DEBUG] CSRF token value:', csrfToken.substring(0, 10) + '...');
-      }
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'X-Tenant': TENANT_ID,
-      };
-      
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-        console.log('🔍 [DEBUG] Adding X-CSRF-Token header');
-      } else {
-        console.log('🔍 [DEBUG] No CSRF token available, trying without it');
-      }
-
-      const response = await fetch(ANALYTICS_ENDPOINT, {
+      // Use our server-side API route to avoid CORS issues
+      const response = await fetch('/api/analytics', {
         method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventType: eventType,
+          properties: {
+            ...eventProps,
+            url: window.location.href,
+            path: window.location.pathname,
+            title: document.title,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            sessionId: this.sessionId,
+            userId: this.userId,
+            source: this.getTrafficSource(),
+            device: this.getDeviceType(),
+            loadTime: performance.now() - this.startTime,
+          },
+        }),
       });
 
       console.log('🔍 [DEBUG] Enhanced analytics response status:', response.status);
@@ -343,16 +344,38 @@ class EnhancedAnalyticsService {
       };
 
       console.log('🌍 [DEBUG] Enhanced analytics geo payload to send:', JSON.stringify(geoPayload, null, 2));
-      console.log('🌍 [DEBUG] Sending to working analytics endpoint:', ANALYTICS_ENDPOINT);
+      console.log('🌍 [DEBUG] Using server-side API route to avoid CORS issues');
 
-      // Use the same working endpoint as regular analytics
-      const response = await fetch(ANALYTICS_ENDPOINT, {
+      // Use our server-side API route to avoid CORS issues
+      const response = await fetch('/api/analytics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant': TENANT_ID,
         },
-        body: JSON.stringify(geoPayload),
+        body: JSON.stringify({
+          eventType: 'page_view_geo',
+          properties: {
+            url: window.location.href,
+            path: path,
+            title: document.title,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            country: geoData.country_name,
+            countryCode: geoData.country_code,
+            region: geoData.region,
+            city: geoData.city,
+            latitude: geoData.latitude,
+            longitude: geoData.longitude,
+            timezone: geoData.timezone,
+            sessionId: this.sessionId,
+            userId: this.userId,
+            source: this.getTrafficSource(),
+            device: this.getDeviceType(),
+            loadTime: performance.now() - this.startTime,
+          },
+        }),
       });
 
       console.log('🌍 [DEBUG] Enhanced analytics geo response status:', response.status);

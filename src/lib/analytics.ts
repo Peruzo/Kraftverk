@@ -60,40 +60,31 @@ class AnalyticsService {
     console.log('🔍 [DEBUG] Properties:', properties);
     console.log('🔍 [DEBUG] Current URL:', window.location.href);
     console.log('🔍 [DEBUG] Current path:', window.location.pathname);
-
-    const event: AnalyticsEvent = {
-      type: eventType,
-      url: window.location.href,
-      path: window.location.pathname,
-      title: document.title,
-      timestamp: new Date().toISOString(),
-      referrer: document.referrer,
-      userAgent: navigator.userAgent,
-      screenWidth: window.screen.width,
-      screenHeight: window.screen.height,
-      properties: properties,
-    };
-
-    const payload = {
-      tenant: TENANT_ID,
-      events: [event]
-    };
-
-    console.log('🔍 [DEBUG] Payload to send:', JSON.stringify(payload, null, 2));
-    console.log('🔍 [DEBUG] Sending to endpoint:', ANALYTICS_ENDPOINT);
+    console.log('🔍 [DEBUG] Using server-side API route to avoid CORS issues');
 
     try {
-      const response = await fetch(ANALYTICS_ENDPOINT, {
+      // Use our server-side API route to avoid CORS issues
+      const response = await fetch('/api/analytics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant': TENANT_ID,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify({
+          eventType: eventType,
+          properties: {
+            ...properties,
+            url: window.location.href,
+            path: window.location.pathname,
+            title: document.title,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+          },
+        }),
       });
 
       console.log('🔍 [DEBUG] Response status:', response.status);
-      console.log('🔍 [DEBUG] Response headers:', Object.fromEntries(response.headers.entries()));
 
       const responseText = await response.text();
       console.log('🔍 [DEBUG] Response body:', responseText);
