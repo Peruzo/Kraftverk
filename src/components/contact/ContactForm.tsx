@@ -41,32 +41,20 @@ export default function ContactForm() {
       return;
     }
 
-    // Prepare payload
-    let messageContent = formData.message;
-    if (formData.phone) {
-      messageContent = `Telefon: ${formData.phone}\n\n${formData.message}`;
-    }
-
-    const payload = {
-      tenant: "kraftverk",
-      name: formData.name || undefined,
-      email: formData.email,
-      phone: formData.phone || undefined,
-      subject: "Kontaktformulär",
-      message: messageContent,
-    };
-
     try {
-      const response = await fetch(
-        "https://source-database.onrender.com/api/messages",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify(payload),
-        }
-      );
+      // Use our server-side API route to avoid CSRF token issues
+      const response = await fetch("/api/contact", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          name: formData.name,
+          email: formData.email,
+          phone: formData.phone,
+          message: formData.message,
+        }),
+      });
 
       const result = await response.json();
 
