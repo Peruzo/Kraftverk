@@ -1,6 +1,7 @@
 import React from "react";
 import Card from "@/components/ui/Card";
 import TrainerCard from "@/components/pt/TrainerCard";
+import ContactForm from "@/components/contact/ContactForm";
 import trainers from "@/data/trainers.json";
 import styles from "./page.module.css";
 
@@ -226,6 +227,11 @@ export default function OmOssPage() {
               </div>
             </Card>
           </div>
+        </section>
+
+        {/* Contact Form */}
+        <section className={styles.section}>
+          <ContactForm />
         </section>
       </div>
     </div>
