@@ -28,25 +28,66 @@ export async function POST(request: NextRequest) {
       message: messageContent,
     };
 
-    // Prepare headers - try multiple approaches
+    // Step 1: Get CSRF token by making a GET request first
+    let csrfToken: string | null = null;
+    const cookieStore: string[] = [];
+    
+    try {
+      console.log("🔍 Step 1: Fetching CSRF token...");
+      const csrfResponse = await fetch(
+        "https://source-database.onrender.com/api/messages",
+        {
+          method: "GET",
+          headers: {
+            "X-Tenant": "kraftverk",
+          },
+        }
+      );
+
+      // Extract CSRF token from Set-Cookie header
+      const setCookieHeader = csrfResponse.headers.get("set-cookie");
+      if (setCookieHeader) {
+        console.log("🍪 Set-Cookie header received:", setCookieHeader);
+        
+        // Extract _csrf token from cookie
+        const csrfMatch = setCookieHeader.match(/_csrf=([^;]+)/);
+        if (csrfMatch && csrfMatch[1]) {
+          csrfToken = csrfMatch[1];
+          cookieStore.push(`_csrf=${csrfToken}`);
+          console.log("✅ CSRF token extracted:", csrfToken.substring(0, 10) + "...");
+        }
+      }
+
+      // Also try X-CSRF-Token header
+      const csrfHeader = csrfResponse.headers.get("X-CSRF-Token");
+      if (csrfHeader) {
+        csrfToken = csrfHeader;
+        console.log("✅ CSRF token from header:", csrfToken.substring(0, 10) + "...");
+      }
+    } catch (error) {
+      console.log("⚠️ Could not fetch CSRF token, will try without it:", error);
+    }
+
+    // Step 2: Prepare headers for POST request
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Tenant": "kraftverk",
     };
 
-    // Try adding tenant as both header and in body (some APIs require both)
-    // Also try common CSRF header names
-    const possibleCSRFHeaders = [
-      "X-CSRF-Token",
-      "X-Csrf-Token", 
-      "CSRF-Token",
-      "X-XSRF-Token",
-    ];
+    // Add CSRF token if we got one
+    if (csrfToken) {
+      headers["X-CSRF-Token"] = csrfToken;
+      console.log("✅ Adding X-CSRF-Token header");
+    }
 
-    // For server-to-server requests, some APIs accept empty CSRF token
-    // or special server authentication. Let's try with tenant only first.
+    // Add cookies if we have them
+    if (cookieStore.length > 0) {
+      headers["Cookie"] = cookieStore.join("; ");
+      console.log("✅ Adding Cookie header");
+    }
 
-    // Send to customer portal
+    // Step 3: Send POST request with CSRF token
+    console.log("📤 Step 2: Sending POST request with CSRF token...");
     const response = await fetch(
       "https://source-database.onrender.com/api/messages",
       {
