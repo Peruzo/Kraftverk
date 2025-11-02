@@ -29,12 +29,14 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare payload for customer portal
+    // According to their instructions, phone can be included in message body
+    // or sent as separate field. We'll include it in message body as they suggested.
     let messageContent = message;
     if (phone) {
       messageContent = `Telefon: ${phone}\n\n${message}`;
     }
 
-    // Build payload - only include defined values to avoid undefined in JSON
+    // Build payload matching their example format exactly
     const payload: Record<string, string> = {
       tenant: "kraftverk",
       email: email,
@@ -42,13 +44,11 @@ export async function POST(request: NextRequest) {
       message: messageContent,
     };
 
-    // Only add optional fields if they have values
+    // Only add optional fields if they have values (as shown in their examples)
     if (name) {
       payload.name = name;
     }
-    if (phone) {
-      payload.phone = phone;
-    }
+    // Note: Phone is included in message body, not as separate field per their preference
 
     // Generate HMAC signature - must be calculated on the exact JSON string
     const payloadString = JSON.stringify(payload);
