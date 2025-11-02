@@ -28,38 +28,23 @@ export async function POST(request: NextRequest) {
       message: messageContent,
     };
 
-    // Try to get CSRF token first by making a GET request
-    let csrfToken: string | null = null;
-    try {
-      const csrfResponse = await fetch(
-        "https://source-database.onrender.com/api/messages",
-        {
-          method: "GET",
-          headers: {
-            "X-Tenant": "kraftverk",
-          },
-        }
-      );
-      
-      // Try to extract CSRF token from response headers or cookies
-      const csrfHeader = csrfResponse.headers.get("X-CSRF-Token");
-      if (csrfHeader) {
-        csrfToken = csrfHeader;
-      }
-    } catch (error) {
-      console.log("Could not fetch CSRF token, proceeding anyway");
-    }
-
-    // Prepare headers
+    // Prepare headers - try multiple approaches
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Tenant": "kraftverk",
     };
 
-    // Add CSRF token if we got one
-    if (csrfToken) {
-      headers["X-CSRF-Token"] = csrfToken;
-    }
+    // Try adding tenant as both header and in body (some APIs require both)
+    // Also try common CSRF header names
+    const possibleCSRFHeaders = [
+      "X-CSRF-Token",
+      "X-Csrf-Token", 
+      "CSRF-Token",
+      "X-XSRF-Token",
+    ];
+
+    // For server-to-server requests, some APIs accept empty CSRF token
+    // or special server authentication. Let's try with tenant only first.
 
     // Send to customer portal
     const response = await fetch(
@@ -86,18 +71,27 @@ export async function POST(request: NextRequest) {
         message: "Meddelandet har skickats!",
       });
     } else {
-      console.error("Customer portal error:", {
+      console.error("❌ Customer portal /api/messages error:", {
         status: response.status,
         statusText: response.statusText,
+        headers: Object.fromEntries(response.headers.entries()),
         response: result,
+        payload: { ...payload, message: "[redacted]" }, // Don't log full message content
       });
       
-      // If CSRF error, provide helpful message
-      if (response.status === 403 && result.message?.includes("CSRF")) {
+      // If CSRF error, provide detailed helpful message
+      if (response.status === 403 && (result.message?.includes("CSRF") || result.message?.includes("token"))) {
+        console.error("🔒 CSRF Token Issue:", {
+          endpoint: "https://source-database.onrender.com/api/messages",
+          issue: "Endpoint requires CSRF token even for server-to-server requests",
+          solution: "Need customer portal team to provide webhook endpoint or API key authentication",
+        });
+        
         return NextResponse.json(
           {
             success: false,
-            message: "Kontakta support - CSRF-token problem. Meddelandet kunde inte skickas.",
+            message: "Kontaktformuläret kunde inte skickas på grund av ett autentiseringsproblem. Vänligen kontakta oss direkt via e-post eller telefon.",
+            error: "CSRF_TOKEN_REQUIRED",
           },
           { status: 403 }
         );

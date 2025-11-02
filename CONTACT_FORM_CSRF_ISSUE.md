@@ -1,27 +1,58 @@
-# Contact Form CSRF Token Issue
+# Contact Form CSRF Token Issue - URGENT
 
 ## Problem
-The `/api/messages` endpoint requires a CSRF token, but we're making server-to-server requests from our Next.js API route. We don't have access to browser cookies or session tokens.
+The `/api/messages` endpoint requires CSRF tokens **even for server-to-server requests**. This is preventing the contact form from working.
+
+**Error:** `403 Forbidden - Ogiltig eller saknad CSRF-token`
 
 ## Current Implementation
-- Contact form sends data to our server-side API route: `/api/contact`
-- Our API route forwards the request to: `https://source-database.onrender.com/api/messages`
-- Error: `403 Forbidden - Ogiltig eller saknad CSRF-token`
+- ✅ Contact form is implemented and working on frontend
+- ✅ Server-side API route `/api/contact` is created
+- ❌ Customer portal `/api/messages` endpoint rejects server-to-server requests due to CSRF requirement
 
-## What We've Tried
-1. Adding `X-Tenant: kraftverk` header
-2. Server-side API route (avoiding client-side CSRF issues)
-3. Attempting to fetch CSRF token via GET request (not working)
+## Technical Details
+- **Our endpoint:** `POST /api/contact` (Next.js server-side route)
+- **Target endpoint:** `POST https://source-database.onrender.com/api/messages`
+- **Headers sent:** `Content-Type: application/json`, `X-Tenant: kraftverk`
+- **Payload:** `{ tenant: "kraftverk", email, name, phone, subject, message }`
 
-## Questions for Customer Portal Team
-1. How should server-side applications handle CSRF tokens for `/api/messages`?
-2. Is there an alternative endpoint for server-to-server message submissions?
-3. Can we get a CSRF token via an API call, or is there an API key we should use instead?
-4. Should we use a webhook-style endpoint similar to `/webhooks/kraftverk-customer-data`?
+## Why CSRF is a Problem
+CSRF (Cross-Site Request Forgery) protection is designed for **browser requests**, not server-to-server API calls. Server-to-server requests don't have:
+- Browser cookies
+- Session tokens
+- CSRF tokens from meta tags
 
-## Requested Solution
-Please provide either:
-- **Option A**: A way to get CSRF tokens for server-side requests
-- **Option B**: An alternative endpoint that doesn't require CSRF tokens (webhook-style)
-- **Option C**: API key authentication for server-to-server requests
+## Solution Options Needed from Customer Portal Team
+
+### **Option A: Webhook Endpoint (RECOMMENDED)**
+Create a webhook-style endpoint similar to `/webhooks/kraftverk-customer-data`:
+```
+POST https://source-database.onrender.com/webhooks/kraftverk-messages
+```
+This would:
+- ✅ Not require CSRF tokens
+- ✅ Accept server-to-server requests
+- ✅ Work consistently with other webhook endpoints
+- ✅ Match the pattern already established
+
+### **Option B: API Key Authentication**
+Provide an API key we can use in headers:
+```
+X-API-Key: [api-key-for-kraftverk]
+```
+
+### **Option C: CSRF Token Endpoint**
+Provide an endpoint to get CSRF tokens for server-side requests:
+```
+GET https://source-database.onrender.com/api/csrf-token
+Response: { csrfToken: "..." }
+```
+
+## Impact
+- **Current status:** Contact form is non-functional
+- **User experience:** Users see error message and cannot contact us through the website
+- **Workaround:** Users must contact us directly via email/phone
+
+## Request
+Please provide **Option A (webhook endpoint)** as it's the cleanest solution and matches your existing webhook architecture.
 
