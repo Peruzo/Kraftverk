@@ -44,17 +44,55 @@ export async function POST(request: NextRequest) {
         }
       );
 
-      // Extract CSRF token from Set-Cookie header
-      const setCookieHeader = csrfResponse.headers.get("set-cookie");
-      if (setCookieHeader) {
-        console.log("🍪 Set-Cookie header received:", setCookieHeader);
-        
-        // Extract _csrf token from cookie
-        const csrfMatch = setCookieHeader.match(/_csrf=([^;]+)/);
-        if (csrfMatch && csrfMatch[1]) {
-          csrfToken = csrfMatch[1];
-          cookieStore.push(`_csrf=${csrfToken}`);
-          console.log("✅ CSRF token extracted:", csrfToken.substring(0, 10) + "...");
+      // Extract all cookies from Set-Cookie header(s)
+      try {
+        // Try getSetCookie() first (newer API)
+        if (typeof csrfResponse.headers.getSetCookie === "function") {
+          const setCookieHeaders = csrfResponse.headers.getSetCookie();
+          if (setCookieHeaders && setCookieHeaders.length > 0) {
+            console.log("🍪 Set-Cookie headers received (getSetCookie):", setCookieHeaders);
+            
+            setCookieHeaders.forEach((cookieHeader) => {
+              const cookieMatch = cookieHeader.match(/^([^=]+)=([^;]+)/);
+              if (cookieMatch && cookieMatch[1] && cookieMatch[2]) {
+                const cookieName = cookieMatch[1];
+                const cookieValue = cookieMatch[2];
+                cookieStore.push(`${cookieName}=${cookieValue}`);
+                
+                if (cookieName === "_csrf") {
+                  csrfToken = cookieValue;
+                  console.log("✅ CSRF token extracted:", csrfToken.substring(0, 10) + "...");
+                } else {
+                  console.log(`✅ Cookie extracted: ${cookieName}=${cookieValue.substring(0, 10)}...`);
+                }
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.log("⚠️ getSetCookie() not available, using fallback method");
+      }
+      
+      // Fallback: try to get from single Set-Cookie header
+      if (!csrfToken) {
+        const setCookieHeader = csrfResponse.headers.get("set-cookie");
+        if (setCookieHeader) {
+          console.log("🍪 Fallback: Set-Cookie header received:", setCookieHeader);
+          const csrfMatch = setCookieHeader.match(/_csrf=([^;]+)/);
+          if (csrfMatch && csrfMatch[1]) {
+            csrfToken = csrfMatch[1];
+            cookieStore.push(`_csrf=${csrfToken}`);
+            console.log("✅ CSRF token extracted (fallback):", csrfToken.substring(0, 10) + "...");
+          }
+          
+          // Also extract other cookies
+          const allCookies = setCookieHeader.split(",");
+          allCookies.forEach((cookie) => {
+            const match = cookie.match(/([^=]+)=([^;]+)/);
+            if (match && match[1] !== "_csrf") {
+              cookieStore.push(`${match[1]}=${match[2]}`);
+            }
+          });
         }
       }
 
@@ -74,20 +112,26 @@ export async function POST(request: NextRequest) {
       "X-Tenant": "kraftverk",
     };
 
-    // Add CSRF token if we got one
+    // Add CSRF token in multiple formats (try all common variations)
     if (csrfToken) {
       headers["X-CSRF-Token"] = csrfToken;
-      console.log("✅ Adding X-CSRF-Token header");
+      headers["X-Csrf-Token"] = csrfToken;
+      headers["CSRF-Token"] = csrfToken;
+      headers["X-XSRF-Token"] = csrfToken;
+      console.log("✅ Adding CSRF token headers (multiple variations)");
+      console.log("🔑 CSRF token value:", csrfToken);
     }
 
-    // Add cookies if we have them
+    // Add cookies if we have them (critical for CSRF validation)
     if (cookieStore.length > 0) {
       headers["Cookie"] = cookieStore.join("; ");
-      console.log("✅ Adding Cookie header");
+      console.log("✅ Adding Cookie header:", headers["Cookie"]);
     }
 
     // Step 3: Send POST request with CSRF token
     console.log("📤 Step 2: Sending POST request with CSRF token...");
+    console.log("📋 Request headers:", JSON.stringify(headers, null, 2));
+    
     const response = await fetch(
       "https://source-database.onrender.com/api/messages",
       {
