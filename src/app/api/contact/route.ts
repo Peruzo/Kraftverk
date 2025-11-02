@@ -34,16 +34,23 @@ export async function POST(request: NextRequest) {
       messageContent = `Telefon: ${phone}\n\n${message}`;
     }
 
-    const payload = {
+    // Build payload - only include defined values to avoid undefined in JSON
+    const payload: Record<string, string> = {
       tenant: "kraftverk",
-      name: name || undefined,
       email: email,
-      phone: phone || undefined,
       subject: "Kontaktformulär",
       message: messageContent,
     };
 
-    // Generate HMAC signature
+    // Only add optional fields if they have values
+    if (name) {
+      payload.name = name;
+    }
+    if (phone) {
+      payload.phone = phone;
+    }
+
+    // Generate HMAC signature - must be calculated on the exact JSON string
     const payloadString = JSON.stringify(payload);
     const signature = crypto
       .createHmac("sha256", webhookSecret)
@@ -51,17 +58,32 @@ export async function POST(request: NextRequest) {
       .digest("hex");
 
     console.log("📤 Sending contact form message to webhook endpoint...");
-    console.log("🔐 HMAC signature generated (first 10 chars):", signature.substring(0, 10) + "...");
+    console.log("📋 Payload being sent:", JSON.stringify(payload, null, 2));
+    console.log("🔐 HMAC signature generated (first 20 chars):", signature.substring(0, 20) + "...");
+    console.log("🔐 HMAC signature (full):", signature);
+    console.log("🔑 Secret configured:", webhookSecret ? "Yes (length: " + webhookSecret.length + ")" : "No");
 
     // Send to customer portal webhook endpoint
+    const requestHeaders = {
+      "Content-Type": "application/json",
+      "X-Signature": signature,
+    };
+
+    console.log("📤 Request details:", {
+      url: "https://source-database.onrender.com/webhooks/messages",
+      method: "POST",
+      headers: {
+        ...requestHeaders,
+        "X-Signature": signature.substring(0, 20) + "..." + " (truncated for security)",
+      },
+      bodyLength: payloadString.length,
+    });
+
     const response = await fetch(
       "https://source-database.onrender.com/webhooks/messages",
       {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "X-Signature": signature,
-        },
+        headers: requestHeaders,
         body: payloadString,
       }
     );
