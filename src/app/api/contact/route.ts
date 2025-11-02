@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import crypto from "crypto";
+import * as crypto from "crypto";
 
 export async function POST(request: NextRequest) {
   try {
@@ -110,6 +110,11 @@ export async function POST(request: NextRequest) {
     }
   } catch (error) {
     console.error("❌ Error submitting contact form:", error);
+    console.error("❌ Error details:", {
+      message: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      name: error instanceof Error ? error.name : undefined,
+    });
     return NextResponse.json(
       {
         success: false,
