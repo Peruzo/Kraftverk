@@ -13,21 +13,6 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Prepare payload for customer portal
-    let messageContent = message;
-    if (phone) {
-      messageContent = `Telefon: ${phone}\n\n${message}`;
-    }
-
-    const payload = {
-      tenant: "kraftverk",
-      name: name || undefined,
-      email: email,
-      phone: phone || undefined,
-      subject: "Kontaktformulär",
-      message: messageContent,
-    };
-
     // Step 1: Get CSRF token by making a GET request first
     let csrfToken: string | null = null;
     const cookieStore: string[] = [];
@@ -106,7 +91,28 @@ export async function POST(request: NextRequest) {
       console.log("⚠️ Could not fetch CSRF token, will try without it:", error);
     }
 
-    // Step 2: Prepare headers for POST request
+    // Step 2: Prepare payload for customer portal
+    let messageContent = message;
+    if (phone) {
+      messageContent = `Telefon: ${phone}\n\n${message}`;
+    }
+
+    const payload: Record<string, any> = {
+      tenant: "kraftverk",
+      name: name || undefined,
+      email: email,
+      phone: phone || undefined,
+      subject: "Kontaktformulär",
+      message: messageContent,
+    };
+
+    // Add CSRF token to request body if we have it (some APIs require it here too)
+    if (csrfToken) {
+      payload._csrf = csrfToken;
+      console.log("✅ Adding _csrf to request body");
+    }
+
+    // Step 3: Prepare headers for POST request
     const headers: Record<string, string> = {
       "Content-Type": "application/json",
       "X-Tenant": "kraftverk",
@@ -128,8 +134,8 @@ export async function POST(request: NextRequest) {
       console.log("✅ Adding Cookie header:", headers["Cookie"]);
     }
 
-    // Step 3: Send POST request with CSRF token
-    console.log("📤 Step 2: Sending POST request with CSRF token...");
+    // Step 4: Send POST request with CSRF token
+    console.log("📤 Step 4: Sending POST request with CSRF token...");
     console.log("📋 Request headers:", JSON.stringify(headers, null, 2));
     
     const response = await fetch(
