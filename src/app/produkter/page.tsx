@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import ProductCard from "@/components/products/ProductCard";
+import { analytics } from "@/lib/enhanced-analytics";
 import products from "@/data/products.json";
 import styles from "./page.module.css";
 
