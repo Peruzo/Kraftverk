@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
 import { getProductDisplayName } from "@/lib/stripe-config";
-import { analytics } from "@/lib/analytics";
+// Note: Checkout route is server-side, so we can't use client-side analytics here
+// Analytics tracking for checkout initiation happens client-side before redirect
 import { getCampaignPriceForProduct } from "@/lib/campaign-price-service";
 import { getStripeProductIdForKey } from "@/lib/product-mapping";
 
@@ -74,18 +75,8 @@ export async function POST(request: NextRequest) {
       console.log(`💰 Using latest active Stripe price: ${priceId} for product: ${productType}`);
     }
 
-    // Track checkout initiation (don't fail if analytics fails)
-    try {
-      analytics.trackCheckout('initiated');
-      if (productId) {
-        analytics.trackMembershipAction('product_checkout_initiated', productType);
-      } else {
-        analytics.trackMembershipAction('checkout_initiated', productType);
-      }
-    } catch (analyticsError) {
-      console.warn("Analytics tracking failed:", analyticsError);
-      // Continue with checkout even if analytics fails
-    }
+    // Note: Checkout initiation tracking happens client-side before calling this API
+    // This ensures we have proper sessionId, device, and consent data
 
     // Get origin for redirect URLs
     const requestOrigin = request.headers.get("origin") || 
@@ -220,7 +211,7 @@ export async function POST(request: NextRequest) {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
     });
-    analytics.trackCheckout('failed');
+    // Note: Checkout failure tracking happens client-side (can't use client-side analytics here)
     return NextResponse.json({ 
       error: "Payment initialization failed",
       details: error instanceof Error ? error.message : "Unknown error"

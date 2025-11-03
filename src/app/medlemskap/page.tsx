@@ -3,6 +3,7 @@
 import React from "react";
 import PricingCard from "@/components/membership/PricingCard";
 import ProductsButton from "@/components/products/ProductsButton";
+import { analytics } from "@/lib/enhanced-analytics";
 import memberships from "@/data/memberships.json";
 import styles from "./page.module.css";
 
@@ -21,6 +22,23 @@ export default function MedlemskapPage() {
       
       const customerName = prompt("Ange ditt namn (valfritt):") || undefined;
 
+      // Track checkout initiation (match TRAFIKKALLOR guide for Product Purchase Funnel)
+      // We'll use a temporary checkoutId, then update it when we get the Stripe session
+      const tempCheckoutId = `checkout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const amountInOre = membership.price * 100; // Convert SEK to öre
+      
+      analytics.trackCheckoutInitiated(
+        tempCheckoutId,
+        amountInOre,
+        'SEK',
+        [{ 
+          item_id: membership.id, 
+          item_name: membership.name, 
+          quantity: 1, 
+          price: membership.price 
+        }]
+      );
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
@@ -38,6 +56,10 @@ export default function MedlemskapPage() {
       const data = await response.json();
 
       if (data.url) {
+        // Store checkoutId for later reference
+        if (data.sessionId) {
+          sessionStorage.setItem(`checkout_${membership.id}`, data.sessionId);
+        }
         window.location.href = data.url; // Redirect to Stripe
       } else {
         alert(`Betalningsfel: ${data.error}`);

@@ -3,7 +3,7 @@
 import { useEffect, useState, Suspense } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { analytics } from "@/lib/analytics";
+import { analytics } from "@/lib/enhanced-analytics";
 
 function SuccessPageContent() {
   const searchParams = useSearchParams();
@@ -55,9 +55,24 @@ function SuccessPageContent() {
         // In production, you would verify the payment with Stripe API
         setPaymentStatus("success");
         
-        // Track successful payment completion with real data
-        analytics.trackCheckout('completed', amount / 100, currency); // Convert cents to currency units
-        analytics.trackMembershipAction('payment_completed', productType);
+        // Track purchase event (match TRAFIKKALLOR guide format)
+        // CRITICAL: value and revenue must be in öre (not SEK)
+        const valueInOre = amount; // amount is already in cents/öre
+        const revenueInOre = amount; // Total revenue
+        
+        analytics.trackPurchase(
+          paymentIntentId || sessionId, // transactionId
+          valueInOre, // CRITICAL: value in öre (not SEK)
+          currency,
+          [{
+            item_id: productId || 'unknown',
+            item_name: productName || 'Unknown Product',
+            category: productType || 'unknown',
+            quantity: quantity || 1,
+            price: amount / 100, // Price per item in SEK (for display)
+          }],
+          revenueInOre // CRITICAL: revenue in öre
+        );
         
         // Send correct customer data to portal
         const paymentData = {

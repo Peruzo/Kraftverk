@@ -2,9 +2,21 @@ import { NextRequest, NextResponse } from "next/server";
 import * as crypto from "crypto";
 
 export async function POST(request: NextRequest) {
+  const requestId = `contact_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+  
   try {
+    console.log(`📧 [CONTACT ${requestId}] Received contact form submission`);
     const body = await request.json();
     const { name, email, phone, message } = body;
+    
+    console.log(`📧 [CONTACT ${requestId}] Form data:`, {
+      hasName: !!name,
+      hasEmail: !!email,
+      hasPhone: !!phone,
+      hasMessage: !!message,
+      emailDomain: email ? email.split('@')[1] : null,
+      messageLength: message ? message.length : 0,
+    });
 
     // Validate required fields
     if (!email || !message) {
@@ -57,11 +69,11 @@ export async function POST(request: NextRequest) {
       .update(payloadString, "utf8")
       .digest("hex");
 
-    console.log("📤 Sending contact form message to webhook endpoint...");
-    console.log("📋 Payload being sent:", JSON.stringify(payload, null, 2));
-    console.log("🔐 HMAC signature generated (first 20 chars):", signature.substring(0, 20) + "...");
-    console.log("🔐 HMAC signature (full):", signature);
-    console.log("🔑 Secret configured:", webhookSecret ? "Yes (length: " + webhookSecret.length + ")" : "No");
+    console.log(`📤 [CONTACT ${requestId}] Sending contact form message to webhook endpoint...`);
+    console.log(`📋 [CONTACT ${requestId}] Payload being sent:`, JSON.stringify(payload, null, 2));
+    console.log(`🔐 [CONTACT ${requestId}] HMAC signature generated (first 20 chars):`, signature.substring(0, 20) + "...");
+    console.log(`🔐 [CONTACT ${requestId}] HMAC signature (full):`, signature);
+    console.log(`🔑 [CONTACT ${requestId}] Secret configured:`, webhookSecret ? "Yes (length: " + webhookSecret.length + ")" : "No");
 
     // Send to customer portal webhook endpoint
     const requestHeaders = {
@@ -69,7 +81,7 @@ export async function POST(request: NextRequest) {
       "X-Signature": signature,
     };
 
-    console.log("📤 Request details:", {
+    console.log(`📤 [CONTACT ${requestId}] Request details:`, {
       url: "https://source-database.onrender.com/webhooks/messages",
       method: "POST",
       headers: {
@@ -77,6 +89,11 @@ export async function POST(request: NextRequest) {
         "X-Signature": signature.substring(0, 20) + "..." + " (truncated for security)",
       },
       bodyLength: payloadString.length,
+      tenant: payload.tenant,
+      email: payload.email,
+      hasName: !!payload.name,
+      subject: payload.subject,
+      messageLength: payload.message.length,
     });
 
     const response = await fetch(
@@ -96,8 +113,17 @@ export async function POST(request: NextRequest) {
       result = { message: responseText };
     }
 
+    console.log(`📥 [CONTACT ${requestId}] Customer portal response:`, {
+      status: response.status,
+      statusText: response.statusText,
+      ok: response.ok,
+      responseHeaders: Object.fromEntries(response.headers.entries()),
+      responseBody: responseText.substring(0, 500),
+      parsedResult: result,
+    });
+
     if (response.ok && result.success) {
-      console.log("✅ Contact form message sent successfully:", result.id);
+      console.log(`✅ [CONTACT ${requestId}] Contact form message sent successfully:`, result.id);
       
       return NextResponse.json({
         success: true,
@@ -105,10 +131,16 @@ export async function POST(request: NextRequest) {
         message: "Meddelandet har skickats!",
       });
     } else {
-      console.error("❌ Customer portal webhook error:", {
+      console.error(`❌ [CONTACT ${requestId}] Customer portal webhook error:`, {
         status: response.status,
         statusText: response.statusText,
         response: result,
+        sentPayload: {
+          tenant: payload.tenant,
+          email: payload.email,
+          subject: payload.subject,
+          hasName: !!payload.name,
+        },
       });
 
       // Handle specific error cases
@@ -131,9 +163,8 @@ export async function POST(request: NextRequest) {
       );
     }
   } catch (error) {
-    console.error("❌ Error submitting contact form:", error);
-    console.error("❌ Error details:", {
-      message: error instanceof Error ? error.message : String(error),
+    console.error(`❌ [CONTACT ${requestId}] Error submitting contact form:`, {
+      error: error instanceof Error ? error.message : String(error),
       stack: error instanceof Error ? error.stack : undefined,
       name: error instanceof Error ? error.name : undefined,
     });

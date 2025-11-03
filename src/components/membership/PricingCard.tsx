@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
+import { analytics } from "@/lib/enhanced-analytics";
 import type { Membership } from "@/types";
 import { 
   fetchActiveCampaigns, 
@@ -75,7 +76,17 @@ export default function PricingCard({ membership, onSelect }: PricingCardProps) 
     loadCampaignData();
   }, [membership.id, membership.price]);
 
+  // Track product view when component mounts (match TRAFIKKALLOR guide for Product Purchase Funnel)
+  useEffect(() => {
+    const price = campaign && discountedPrice ? discountedPrice : membership.price;
+    analytics.trackMembershipView(membership.id, membership.name, price);
+  }, [membership, campaign, discountedPrice]);
+
   const handleSelect = () => {
+    // Track add to cart (match TRAFIKKALLOR guide for Product Purchase Funnel)
+    const price = campaign && discountedPrice ? discountedPrice : membership.price;
+    analytics.trackMembershipSelect(membership.id, membership.name, price);
+    
     if (onSelect) {
       onSelect(campaign?.id);
     }

@@ -4,7 +4,7 @@ import React from "react";
 import Card from "@/components/ui/Card";
 import Badge from "@/components/ui/Badge";
 import Button from "@/components/ui/Button";
-import { analytics } from "@/lib/analytics";
+import { analytics } from "@/lib/enhanced-analytics";
 import type { ClassInstance } from "@/types";
 import styles from "./ClassCard.module.css";
 
