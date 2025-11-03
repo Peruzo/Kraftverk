@@ -126,14 +126,9 @@ export async function POST(request: NextRequest) {
         if (campaign && campaign.stripeCouponId) {
           campaignDiscount = [{ coupon: campaign.stripeCouponId }];
           
-          // Track campaign applied
-          analytics.sendCustomEvent('campaign_applied', {
-            campaignId: campaign.id,
-            campaignName: campaign.name,
-            productType: productType,
-          });
-          
-          console.log(`✅ Campaign applied: ${campaign.name}`);
+          // Note: Campaign applied tracking happens client-side when user selects campaign
+          // Server-side route cannot use client-side analytics
+          console.log(`✅ Campaign applied: ${campaign.name} (${campaign.id})`);
         }
       } catch (error) {
         console.error('Failed to fetch campaign:', error);
