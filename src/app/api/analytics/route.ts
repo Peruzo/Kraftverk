@@ -91,15 +91,19 @@ export async function POST(request: NextRequest) {
     console.log(`📤 [ANALYTICS ${requestId}] Full event payload (truncated):`, JSON.stringify(analyticsEvent, null, 2).substring(0, 1000));
 
     // Send to customer portal analytics endpoint
-    // The endpoint expects individual events, not wrapped in a tenant/events structure
-    // Based on TRAFIKKALLOR guide, we send directly to /api/analytics/track or /api/ingest/analytics
+    // The endpoint expects an array of events (per error message "Events array krävs")
+    // Wrap the event in an array
+    const eventsArray = [analyticsEvent];
+    
+    console.log(`📤 [ANALYTICS ${requestId}] Sending events array with ${eventsArray.length} event(s)`);
+
     const response = await fetch(ANALYTICS_ENDPOINT, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         "X-Tenant": TENANT_ID,
       },
-      body: JSON.stringify(analyticsEvent),
+      body: JSON.stringify(eventsArray),
     });
 
     const responseText = await response.text();
