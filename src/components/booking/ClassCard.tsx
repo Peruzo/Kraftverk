@@ -23,7 +23,8 @@ export default function ClassCard({ classInstance, onBook, loading = false }: Cl
     analytics.trackClassBooking(
       template?.title || 'Unknown Class',
       trainer?.name || 'Unknown Instructor',
-      formatTime(startTime)
+      formatTime(startTime),
+      classInstance.id || 'unknown'
     );
     onBook();
   };
