@@ -720,11 +720,20 @@ class EnhancedAnalyticsService {
   }
 
   trackLinkClick(linkText: string, linkUrl: string, linkType: 'internal' | 'external'): void {
-    this.sendEvent('link_click', {
-      link_text: linkText.trim(),
-      link_url: linkUrl,
-      link_type: linkType,
-    });
+    // Map link clicks to valid event types (link_click is not a valid event type)
+    // Internal links will trigger page_view on navigation, so we skip them here
+    // External links are tracked as cta_click events
+    if (linkType === 'external') {
+      this.sendEvent('cta_click', {
+        ctaId: 'external_link',
+        ctaText: linkText.trim().substring(0, 100),
+        ctaType: 'external_link',
+        location: 'page',
+        link_url: linkUrl,
+        link_type: 'external',
+      });
+    }
+    // Skip internal links - they'll trigger page_view on navigation
   }
 
   trackScrollDepth(percent: number): void {
