@@ -91,11 +91,21 @@ export async function POST(request: NextRequest) {
     console.log(`📤 [ANALYTICS ${requestId}] Full event payload (truncated):`, JSON.stringify(analyticsEvent, null, 2).substring(0, 1000));
 
     // Send to customer portal analytics endpoint
-    // The endpoint expects an array of events (per error message "Events array krävs")
-    // Wrap the event in an array
+    // The endpoint expects an object with "events" array property (per error message "Events array krävs")
+    // Wrap the event in an array and include tenant
     const eventsArray = [analyticsEvent];
+    const payload = {
+      tenant: TENANT_ID,
+      events: eventsArray,
+    };
     
-    console.log(`📤 [ANALYTICS ${requestId}] Sending events array with ${eventsArray.length} event(s)`);
+    console.log(`📤 [ANALYTICS ${requestId}] Sending payload with ${eventsArray.length} event(s) in events array`);
+    console.log(`📤 [ANALYTICS ${requestId}] Payload structure:`, {
+      hasTenant: !!payload.tenant,
+      tenant: payload.tenant,
+      eventsCount: payload.events.length,
+      firstEventType: payload.events[0]?.event_type || payload.events[0]?.eventType,
+    });
 
     const response = await fetch(ANALYTICS_ENDPOINT, {
       method: "POST",
@@ -103,7 +113,7 @@ export async function POST(request: NextRequest) {
         "Content-Type": "application/json",
         "X-Tenant": TENANT_ID,
       },
-      body: JSON.stringify(eventsArray),
+      body: JSON.stringify(payload),
     });
 
     const responseText = await response.text();
