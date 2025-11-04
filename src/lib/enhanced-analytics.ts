@@ -58,7 +58,7 @@ class EnhancedAnalyticsService {
 
   constructor() {
     this.domain = typeof window !== 'undefined' ? window.location.hostname : '';
-    this.sessionId = this.getSessionId();
+    this.sessionId = this.initializeSessionId();
     this.userId = this.getHashedUserId();
     this.startTime = performance.now();
     
@@ -88,7 +88,7 @@ class EnhancedAnalyticsService {
     return null;
   }
 
-  private getSessionId(): string {
+  private initializeSessionId(): string {
     if (typeof window === 'undefined') return '';
     
     let sessionId = sessionStorage.getItem('kraftverk_session_id');
