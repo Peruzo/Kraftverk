@@ -540,9 +540,13 @@ class EnhancedAnalyticsService {
   // ===== PERFORMANCE ANALYTICS =====
 
   trackPerformance(metric: string, data: PerformanceMetrics): void {
-    this.sendEvent('performance', {
-      metric,
-      ...data,
+    // Send performance metrics as page_view events (performance is not a valid event type)
+    // This ensures Core Web Vitals are tracked while using valid event types
+    this.sendEvent('page_view', {
+      performance_metric: metric, // e.g., 'lcp', 'cls', 'fcp', 'page_load'
+      performance_data: data, // e.g., { lcp: 1234, cls: 0.1, fcp: 567, load_time: 890 }
+      path: window.location.pathname,
+      page_title: document.title,
     });
   }
 
