@@ -35,7 +35,22 @@ export async function POST(request: NextRequest) {
     if (event) {
       // Use the event object directly (matches TRAFIKKALLOR guide format)
       console.log(`📊 [ANALYTICS ${requestId}] Using full event object`);
-      analyticsEvent = event;
+      analyticsEvent = { ...event };
+      
+      // Customer portal expects "type" instead of "event_type"
+      if (analyticsEvent.event_type && !analyticsEvent.type) {
+        analyticsEvent.type = analyticsEvent.event_type;
+        // Keep event_type for backward compatibility, but type is required
+      }
+      
+      // Ensure url is absolute (customer portal requirement)
+      if (analyticsEvent.url && !analyticsEvent.url.startsWith('http')) {
+        // Convert relative URL to absolute
+        const baseUrl = typeof window !== 'undefined' 
+          ? window.location.origin 
+          : 'https://kraftverk-test-kund.onrender.com';
+        analyticsEvent.url = baseUrl + analyticsEvent.url;
+      }
       
       // Ensure tenant is included (CRITICAL for multi-tenant isolation)
       if (!analyticsEvent.tenant) {
@@ -45,9 +60,17 @@ export async function POST(request: NextRequest) {
     } else {
       console.log(`📊 [ANALYTICS ${requestId}] Building event from eventType and properties`);
       // Build event from eventType and properties (backward compatibility)
+      const relativeUrl = properties?.url || properties?.path || "";
+      const absoluteUrl = relativeUrl.startsWith('http') 
+        ? relativeUrl 
+        : (typeof window !== 'undefined' 
+            ? window.location.origin + relativeUrl 
+            : 'https://kraftverk-test-kund.onrender.com' + relativeUrl);
+      
       analyticsEvent = {
-        event_type: eventType,
-        url: properties?.url || properties?.path || "",
+        type: eventType, // Customer portal expects "type" (not "event_type")
+        event_type: eventType, // Keep for backward compatibility
+        url: absoluteUrl, // Must be absolute URL
         title: properties?.title || "",
         referrer: properties?.referrer || null,
         userAgent: properties?.userAgent || "",
