@@ -86,7 +86,7 @@ export default function EnhancedAnalyticsProvider({ children }: { children: Reac
         
         // Track form start when user focuses on first field (match TRAFIKKALLOR guide)
         formElement.addEventListener('focus', (e) => {
-          if (e.target.matches('input, textarea, select') && !formStartTime) {
+          if (e.target && (e.target as HTMLElement).matches('input, textarea, select') && !formStartTime) {
             formStartTime = Date.now();
             analytics.trackFormStart(formId, formName);
           }
@@ -94,7 +94,7 @@ export default function EnhancedAnalyticsProvider({ children }: { children: Reac
 
         // Track field focus times for form_error timeSpent calculation
         formElement.addEventListener('focus', (e) => {
-          if (e.target.matches('input, textarea, select')) {
+          if (e.target && (e.target as HTMLElement).matches('input, textarea, select')) {
             const fieldName = (e.target as HTMLInputElement).name || 
                              (e.target as HTMLInputElement).id || 
                              'unknown';
@@ -105,6 +105,7 @@ export default function EnhancedAnalyticsProvider({ children }: { children: Reac
         // Track form field validation errors (match TRAFIKKALLOR guide for field drop-off)
         formElement.addEventListener('invalid', (e) => {
           e.preventDefault();
+          if (!e.target) return;
           const field = e.target as HTMLInputElement;
           const fieldName = field.name || field.id || 'unknown';
           const timeSpent = fieldFocusTimes[fieldName] 
