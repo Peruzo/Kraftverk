@@ -129,9 +129,17 @@ export async function POST(request: NextRequest) {
       statusText: response.statusText,
       ok: response.ok,
       responseHeaders: Object.fromEntries(response.headers.entries()),
-      responseBody: responseText.substring(0, 500), // Truncate long responses
+      responseBody: responseText.substring(0, 2000), // Show more of response for error details
       parsedResult: result,
+      processedCount: result?.data?.processed,
+      errorCount: result?.data?.errors,
+      errorDetails: result?.data?.errorDetails,
     });
+    
+    // Log full error details if present
+    if (result?.data?.errorDetails && result.data.errorDetails.length > 0) {
+      console.error(`❌ [ANALYTICS ${requestId}] Event validation errors:`, JSON.stringify(result.data.errorDetails, null, 2));
+    }
 
     if (response.ok) {
       console.log(`✅ [ANALYTICS ${requestId}] Successfully sent analytics event to customer portal`);
