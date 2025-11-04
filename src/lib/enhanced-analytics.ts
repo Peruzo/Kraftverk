@@ -169,7 +169,7 @@ class EnhancedAnalyticsService {
   private getHashedUserId(): string | undefined {
     if (typeof window === 'undefined') return undefined;
     
-    // Check if user is logged in (you can modify this based on your auth system)
+    // First, check if user is logged in (you can modify this based on your auth system)
     const userElement = document.querySelector('[data-user-id]');
     if (userElement) {
       const userId = userElement.getAttribute('data-user-id');
@@ -177,7 +177,18 @@ class EnhancedAnalyticsService {
         return btoa(userId + TENANT_ID).substr(0, 16);
       }
     }
-    return undefined;
+    
+    // If not logged in, use localStorage for consistent userId (per customer portal requirements)
+    // This ensures accurate unique visitor counts
+    let userId = localStorage.getItem('analytics_user_id');
+    if (!userId) {
+      // Generate a persistent user ID
+      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('analytics_user_id', userId);
+    }
+    
+    // Hash the userId for privacy (consistent hashing)
+    return btoa(userId + TENANT_ID).substr(0, 16);
   }
 
   private getTrafficSource(referrer?: string | null): string {
@@ -219,9 +230,27 @@ class EnhancedAnalyticsService {
   private getDeviceType(): string {
     if (typeof window === 'undefined') return 'desktop';
     
-    const width = window.innerWidth;
-    if (width < 768) return 'mobile';
-    if (width < 1024) return 'tablet';
+    // Improved device detection using User-Agent + screen width (per customer portal requirements)
+    const width = window.innerWidth || document.documentElement.clientWidth;
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    // Tablet detection (better than width alone)
+    const isTablet = /tablet|ipad|playbook|silk/i.test(userAgent) ||
+                     (width >= 768 && width < 1024 && width > window.innerHeight * 0.8);
+    
+    if (isTablet) {
+      return 'tablet';
+    }
+    
+    // Mobile detection using User-Agent + width
+    const isMobile = /mobile|iphone|ipod|android|blackberry|opera|mini|windows\sce|palm|smartphone|iemobile/i.test(userAgent) ||
+                     width < 768;
+    
+    if (isMobile) {
+      return 'mobile';
+    }
+    
+    // Desktop as default
     return 'desktop';
   }
 
