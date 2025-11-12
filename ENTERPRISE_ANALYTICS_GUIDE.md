@@ -445,3 +445,5 @@ For issues or questions:
 **Version**: 2.0.0 Enterprise  
 **Integration**: Enhanced Analytics + Statistics → Customer Portal  
 **Package**: Enterprise
+
+
