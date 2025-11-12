@@ -87,6 +87,22 @@
   font-weight: 500;
 }
 
+.campaignBadge {
+  position: absolute;
+  top: 12px;
+  left: 12px;
+  z-index: 10;
+}
+
+.originalPrice {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  text-decoration: line-through;
+  margin-right: 0.5rem;
+  opacity: 0.7;
+}
+
 @media (max-width: 768px) {
   .imageWrapper {
     height: 180px;
@@ -98,5 +114,9 @@
   
   .priceAmount {
     font-size: 1.3rem;
+  }
+  
+  .originalPrice {
+    font-size: 1rem;
   }
 }
