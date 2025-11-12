@@ -5,6 +5,7 @@ import Footer from "@/components/layout/Footer";
 import AnimatedBackground from "@/components/effects/AnimatedBackground";
 import ScrollProgress from "@/components/effects/ScrollProgress";
 import EnhancedAnalyticsProvider from "@/components/providers/EnhancedAnalyticsProvider";
+import ConsentBanner from "@/components/consent/ConsentBanner";
 
 export const metadata: Metadata = {
   title: "Kraftverk Studio — Träna smart. Känn dig hemma.",
@@ -28,6 +29,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
             {children}
           </main>
           <Footer />
+          <ConsentBanner />
         </EnhancedAnalyticsProvider>
       </body>
     </html>

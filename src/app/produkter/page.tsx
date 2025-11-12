@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import ProductCard from "@/components/products/ProductCard";
+import { analytics } from "@/lib/enhanced-analytics";
 import products from "@/data/products.json";
 import styles from "./page.module.css";
 
@@ -22,6 +23,18 @@ export default function ProductsPage() {
       
       const customerName = prompt("Ange ditt namn (valfritt):") || undefined;
 
+      // Track checkout initiation (match TRAFIKKALLOR guide for Product Purchase Funnel)
+      // We'll use a temporary checkoutId, then update it when we get the Stripe session
+      const tempCheckoutId = `checkout_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+      const amountInOre = product.price * 100; // Convert SEK to öre
+      
+      analytics.trackCheckoutInitiated(
+        tempCheckoutId,
+        amountInOre,
+        'SEK',
+        [{ product_id: product.id, product_name: product.name, quantity: 1, price: product.price }]
+      );
+
       const response = await fetch("/api/checkout", {
         method: "POST",
         headers: {
@@ -38,6 +51,10 @@ export default function ProductsPage() {
       const data = await response.json();
 
       if (data.url) {
+        // Store checkoutId for later reference
+        if (data.sessionId) {
+          sessionStorage.setItem(`checkout_${product.id}`, data.sessionId);
+        }
         window.location.href = data.url; // Redirect to Stripe
       } else {
         alert(`Betalningsfel: ${data.error}`);

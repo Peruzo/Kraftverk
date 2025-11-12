@@ -58,7 +58,7 @@ class EnhancedAnalyticsService {
 
   constructor() {
     this.domain = typeof window !== 'undefined' ? window.location.hostname : '';
-    this.sessionId = this.getSessionId();
+    this.sessionId = this.initializeSessionId();
     this.userId = this.getHashedUserId();
     this.startTime = performance.now();
     
@@ -88,21 +88,88 @@ class EnhancedAnalyticsService {
     return null;
   }
 
-  private getSessionId(): string {
+  private initializeSessionId(): string {
     if (typeof window === 'undefined') return '';
     
     let sessionId = sessionStorage.getItem('kraftverk_session_id');
     if (!sessionId) {
-      sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+      // Format: sess_timestamp_random (matching TRAFIKKALLOR guide)
+      sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
       sessionStorage.setItem('kraftverk_session_id', sessionId);
     }
     return sessionId;
   }
 
+  private getUserConsent(): boolean {
+    if (typeof window === 'undefined') return false;
+    
+    // Check if user has given consent for GDPR compliance
+    const consent = localStorage.getItem('analytics_consent');
+    if (consent === 'true') {
+      return true;
+    }
+    if (consent === 'false') {
+      return false;
+    }
+    // Default to false if no consent choice made (GDPR compliant)
+    return false;
+  }
+
+  /**
+   * Public method to set user consent for GDPR compliance
+   * Call this when user accepts/rejects analytics tracking
+   */
+  setUserConsent(consent: boolean): void {
+    if (typeof window === 'undefined') return;
+    localStorage.setItem('analytics_consent', consent.toString());
+    console.log('✅ [GDPR] Analytics consent updated:', consent);
+  }
+
+  /**
+   * Public method to get current consent status
+   */
+  getUserConsentStatus(): boolean {
+    return this.getUserConsent();
+  }
+
+  /**
+   * Public method to get current session ID
+   */
+  getSessionId(): string {
+    return this.sessionId;
+  }
+
+  /**
+   * Public method to get current device type (public wrapper to avoid recursion)
+   */
+  getDeviceTypePublic(): string {
+    if (typeof window === 'undefined') return 'desktop';
+    
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    // Tablet-detektering (bättre än bara bredd)
+    const isTablet = /ipad|android(?!.*mobile)|tablet/i.test(userAgent) ||
+                     (width >= 768 && width < 1024 && width > height * 0.8);
+    
+    if (isTablet) {
+      return 'tablet';
+    }
+    
+    // Mobile-detektering
+    if (width < 768 || /mobile|android|iphone|ipod|blackberry|iemobile|opera mini/i.test(userAgent)) {
+      return 'mobile';
+    }
+    
+    // Desktop som standard
+    return 'desktop';
+  }
+
   private getHashedUserId(): string | undefined {
     if (typeof window === 'undefined') return undefined;
     
-    // Check if user is logged in (you can modify this based on your auth system)
+    // First, check if user is logged in (you can modify this based on your auth system)
     const userElement = document.querySelector('[data-user-id]');
     if (userElement) {
       const userId = userElement.getAttribute('data-user-id');
@@ -110,33 +177,80 @@ class EnhancedAnalyticsService {
         return btoa(userId + TENANT_ID).substr(0, 16);
       }
     }
-    return undefined;
+    
+    // If not logged in, use localStorage for consistent userId (per customer portal requirements)
+    // This ensures accurate unique visitor counts
+    let userId = localStorage.getItem('analytics_user_id');
+    if (!userId) {
+      // Generate a persistent user ID
+      userId = 'user_' + Date.now() + '_' + Math.random().toString(36).substr(2, 9);
+      localStorage.setItem('analytics_user_id', userId);
+    }
+    
+    // Hash the userId for privacy (consistent hashing)
+    return btoa(userId + TENANT_ID).substr(0, 16);
   }
 
-  private getTrafficSource(): string {
+  private getTrafficSource(referrer?: string | null): string {
     if (typeof window === 'undefined') return 'direct';
     
-    const referrer = document.referrer;
-    if (!referrer) return 'direct';
+    const ref = referrer || document.referrer;
+    if (!ref) return 'direct';
     
     try {
-      const hostname = new URL(referrer).hostname;
-      if (hostname.includes('google')) return 'organic';
-      if (hostname.includes('facebook') || hostname.includes('instagram')) return 'social';
-      if (hostname.includes('linkedin')) return 'social';
-      if (hostname.includes('twitter')) return 'social';
+      const hostname = new URL(ref).hostname.toLowerCase();
+      
+      // Check for search engines (organic)
+      if (hostname.includes('google') || hostname.includes('bing') || 
+          hostname.includes('yahoo') || hostname.includes('duckduckgo')) {
+        return 'organic';
+      }
+      
+      // Check for social media
+      if (hostname.includes('facebook') || hostname.includes('instagram') || 
+          hostname.includes('linkedin') || hostname.includes('twitter') || 
+          hostname.includes('tiktok') || hostname.includes('youtube')) {
+        return 'social';
+      }
+      
+      // Check for email
+      if (hostname.includes('mail.') || hostname.includes('email') || 
+          hostname.includes('newsletter')) {
+        return 'email';
+      }
+      
+      // Default to referral for other sources
       return 'referral';
     } catch {
-      return 'referral';
+      // If referrer is invalid URL, treat as direct
+      return 'direct';
     }
   }
 
   private getDeviceType(): string {
     if (typeof window === 'undefined') return 'desktop';
     
-    const width = window.innerWidth;
-    if (width < 768) return 'mobile';
-    if (width < 1024) return 'tablet';
+    // Improved device detection using User-Agent + screen width (per customer portal requirements)
+    const width = window.innerWidth || document.documentElement.clientWidth;
+    const userAgent = navigator.userAgent.toLowerCase();
+    
+    // Tablet detection (better than width alone)
+    const isTablet = /tablet|ipad|playbook|silk/i.test(userAgent) ||
+                     (width >= 768 && width < 1024 && width > window.innerHeight * 0.8);
+    
+    if (isTablet) {
+      return 'tablet';
+    }
+    
+    // Mobile detection using User-Agent + width
+    const isMobile = /mobile|iphone|ipod|android|blackberry|opera|mini|windows\sce|palm|smartphone|iemobile/i.test(userAgent) ||
+                     width < 768;
+    
+    if (isMobile) {
+      return 'mobile';
+    }
+    
+    // Desktop as default
     return 'desktop';
   }
 
@@ -182,9 +296,16 @@ class EnhancedAnalyticsService {
     }).observe({ entryTypes: ['paint'] });
   }
 
-  private async sendEvent(eventType: string, eventProps: Record<string, any> = {}): Promise<void> {
+  private async sendEvent(eventType: string, eventProps: Record<string, any> = {}, bypassConsent: boolean = false): Promise<void> {
     if (typeof window === 'undefined') {
       console.log('🔍 [DEBUG] sendEvent called on server side - skipping');
+      return;
+    }
+
+    // Check consent before tracking (GDPR compliance)
+    // Some critical events (like purchases) may bypass consent check
+    if (!bypassConsent && !this.getUserConsent()) {
+      console.log('⚠️ [GDPR] User has not given consent for analytics tracking - skipping event:', eventType);
       return;
     }
 
@@ -194,58 +315,47 @@ class EnhancedAnalyticsService {
     console.log('🔍 [DEBUG] Current URL:', window.location.href);
     console.log('🔍 [DEBUG] Current path:', window.location.pathname);
 
+    // Build event matching TRAFIKKALLOR integration guide format
+    const currentPath = eventProps.path || window.location.pathname;
+    const fullUrl = currentPath + (eventProps.search || window.location.search || '');
+    
     const event = {
-      type: eventType,
-      url: window.location.href,
-      path: window.location.pathname,
-      title: document.title,
-      timestamp: new Date().toISOString(),
-      referrer: document.referrer,
+      event_type: eventType, // Top level (matching guide format)
+      url: fullUrl,
+      title: eventProps.page_title || document.title,
+      referrer: document.referrer || null, // null if empty for direct traffic detection
       userAgent: navigator.userAgent,
-      screenWidth: window.screen.width,
-      screenHeight: window.screen.height,
+      timestamp: new Date().toISOString(),
+      sessionId: this.sessionId, // Top level (CRITICAL)
+      userId: this.userId, // Top level (hashed if available)
+      device: this.getDeviceType(), // Top level: "desktop", "mobile", or "tablet" (CRITICAL)
+      consent: this.getUserConsent(), // Top level: true/false for GDPR
+      tenant: TENANT_ID, // CRITICAL: for tenant isolation (per TRAFIKKALLOR guide)
       properties: {
         ...eventProps,
-        sessionId: this.sessionId,
-        userId: this.userId,
-        source: this.getTrafficSource(),
-        device: this.getDeviceType(),
+        // Keep additional metadata in properties
         loadTime: performance.now() - this.startTime,
+        viewport: {
+          width: window.innerWidth,
+          height: window.innerHeight,
+        },
       },
     };
 
-    const payload = {
-      tenant: TENANT_ID,
-      events: [event]
-    };
-
-    console.log('🔍 [DEBUG] Enhanced analytics payload to send:', JSON.stringify(payload, null, 2));
-    console.log('🔍 [DEBUG] Sending to endpoint:', ANALYTICS_ENDPOINT);
+    console.log('🔍 [DEBUG] Enhanced analytics event formatted:', JSON.stringify(event, null, 2));
+    console.log('🔍 [DEBUG] Using server-side API route to avoid CORS issues');
 
     try {
-      // Get CSRF token from meta tag or cookie
-      const csrfToken = this.getCSRFToken();
-      console.log('🔍 [DEBUG] CSRF token found:', csrfToken ? 'Yes' : 'No');
-      if (csrfToken) {
-        console.log('🔍 [DEBUG] CSRF token value:', csrfToken.substring(0, 10) + '...');
-      }
-      
-      const headers: Record<string, string> = {
-        'Content-Type': 'application/json',
-        'X-Tenant': TENANT_ID,
-      };
-      
-      if (csrfToken) {
-        headers['X-CSRF-Token'] = csrfToken;
-        console.log('🔍 [DEBUG] Adding X-CSRF-Token header');
-      } else {
-        console.log('🔍 [DEBUG] No CSRF token available, trying without it');
-      }
-
-      const response = await fetch(ANALYTICS_ENDPOINT, {
+      // Use our server-side API route to avoid CORS issues
+      const response = await fetch('/api/analytics', {
         method: 'POST',
-        headers,
-        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          eventType: eventType,
+          event: event, // Send full event object for proper formatting
+        }),
       });
 
       console.log('🔍 [DEBUG] Enhanced analytics response status:', response.status);
@@ -285,13 +395,54 @@ class EnhancedAnalyticsService {
     console.log('🔍 [DEBUG] Page title parameter:', pageTitle);
     console.log('🔍 [DEBUG] Window location pathname:', window.location.pathname);
 
-    // Send regular page view
+    // Get performance metrics for Systemhälsa widget (CRITICAL)
+    const navigation = performance.getEntriesByType('navigation')[0] as PerformanceNavigationTiming | undefined;
+    const loadTime = navigation 
+      ? navigation.loadEventEnd - navigation.fetchStart 
+      : performance.now();
+
+    // Try to detect HTTP status code (for error tracking)
+    let statusCode = 200; // Default: success
+    let errorInfo: string | null = null;
+    
+    if (document.readyState === 'complete') {
+      // Check if page is a 404
+      const has404 = document.querySelector('[data-status="404"]') || 
+                     window.location.pathname.includes('404') ||
+                     document.title.toLowerCase().includes('not found');
+      
+      if (has404) {
+        statusCode = 404;
+        errorInfo = 'Page not found';
+      }
+    }
+
+    // Send page view event matching TRAFIKKALLOR integration guide format
+    // Include performance metrics and status code for Systemhälsa widget
     this.sendEvent('page_view', {
       page_title: pageTitle || document.title,
       page_category: this.getPageCategory(),
       path: path || window.location.pathname,
       search: window.location.search,
       hash: window.location.hash,
+      screenWidth: window.screen.width,
+      screenHeight: window.screen.height,
+      language: navigator.language,
+      // CRITICAL for Systemhälsa widget: responseTime/loadTime in milliseconds
+      responseTime: loadTime,
+      loadTime: loadTime,
+      pageLoadTime: loadTime,
+      // CRITICAL for Systemhälsa widget: statusCode/httpStatus for error tracking
+      statusCode: statusCode,
+      httpStatus: statusCode,
+      // Additional performance metrics (optional)
+      domContentLoaded: navigation ? navigation.domContentLoadedEventEnd - navigation.fetchStart : 0,
+      firstPaint: performance.getEntriesByType('paint').find(p => p.name === 'first-paint')?.startTime || 0,
+      // Error info if present
+      ...(errorInfo && {
+        error: errorInfo,
+        errorCode: statusCode,
+      }),
     });
 
     // Also send geo-tracked page view
@@ -343,16 +494,38 @@ class EnhancedAnalyticsService {
       };
 
       console.log('🌍 [DEBUG] Enhanced analytics geo payload to send:', JSON.stringify(geoPayload, null, 2));
-      console.log('🌍 [DEBUG] Sending to working analytics endpoint:', ANALYTICS_ENDPOINT);
+      console.log('🌍 [DEBUG] Using server-side API route to avoid CORS issues');
 
-      // Use the same working endpoint as regular analytics
-      const response = await fetch(ANALYTICS_ENDPOINT, {
+      // Use our server-side API route to avoid CORS issues
+      const response = await fetch('/api/analytics', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'X-Tenant': TENANT_ID,
         },
-        body: JSON.stringify(geoPayload),
+        body: JSON.stringify({
+          eventType: 'page_view_geo',
+          properties: {
+            url: window.location.href,
+            path: path,
+            title: document.title,
+            referrer: document.referrer,
+            userAgent: navigator.userAgent,
+            screenWidth: window.screen.width,
+            screenHeight: window.screen.height,
+            country: geoData.country_name,
+            countryCode: geoData.country_code,
+            region: geoData.region,
+            city: geoData.city,
+            latitude: geoData.latitude,
+            longitude: geoData.longitude,
+            timezone: geoData.timezone,
+            sessionId: this.sessionId,
+            userId: this.userId,
+            source: this.getTrafficSource(),
+            device: this.getDeviceType(),
+            loadTime: performance.now() - this.startTime,
+          },
+        }),
       });
 
       console.log('🌍 [DEBUG] Enhanced analytics geo response status:', response.status);
@@ -396,9 +569,13 @@ class EnhancedAnalyticsService {
   // ===== PERFORMANCE ANALYTICS =====
 
   trackPerformance(metric: string, data: PerformanceMetrics): void {
-    this.sendEvent('performance', {
-      metric,
-      ...data,
+    // Send performance metrics as page_view events (performance is not a valid event type)
+    // This ensures Core Web Vitals are tracked while using valid event types
+    this.sendEvent('page_view', {
+      performance_metric: metric, // e.g., 'lcp', 'cls', 'fcp', 'page_load'
+      performance_data: data, // e.g., { lcp: 1234, cls: 0.1, fcp: 567, load_time: 890 }
+      path: window.location.pathname,
+      page_title: document.title,
     });
   }
 
@@ -413,10 +590,14 @@ class EnhancedAnalyticsService {
   // ===== FORM ANALYTICS =====
 
   trackFormStart(formId: string, formName?: string): void {
+    // Match TRAFIKKALLOR guide: formId, formName, formAction, formMethod in eventProps
+    const form = document.querySelector(`form[id="${formId}"], form[name="${formId}"]`) as HTMLFormElement | null;
+    
     this.sendEvent('form_start', {
-      form_id: formId,
-      form_name: formName,
-      form_url: window.location.href,
+      formId: formId, // CRITICAL: required
+      formName: formName || form?.name || form?.id || formId,
+      formAction: form?.action || '',
+      formMethod: form?.method || 'POST',
     });
   }
 
@@ -435,12 +616,32 @@ class EnhancedAnalyticsService {
     });
   }
 
-  trackFormSubmit(formId: string, formData?: Record<string, any>, completionTime?: number): void {
+  trackFormError(formId: string, fieldName: string, fieldType?: string, errorMessage?: string, timeSpent?: number): void {
+    // Match TRAFIKKALLOR guide: formId, fieldName, fieldType, errorMessage, timeSpent (seconds) in eventProps
+    const form = document.querySelector(`form[id="${formId}"], form[name="${formId}"]`) as HTMLFormElement | null;
+    
+    this.sendEvent('form_error', {
+      formId: formId, // CRITICAL: required
+      fieldName: fieldName, // CRITICAL: required for field drop-off analysis
+      fieldType: fieldType || 'text',
+      errorMessage: errorMessage || 'Invalid input',
+      timeSpent: timeSpent ? Math.round(timeSpent) : undefined, // CRITICAL: seconds in field before error
+      formName: form?.name || form?.id || formId,
+    });
+  }
+
+  trackFormSubmit(formId: string, formData?: Record<string, any>, duration?: number): void {
+    // Match TRAFIKKALLOR guide: formId, duration (seconds), formName, formAction, formMethod in eventProps
+    const form = formId ? document.querySelector(`form[id="${formId}"], form[name="${formId}"]`) : null;
+    const formElement = form as HTMLFormElement | null;
+    
     this.sendEvent('form_submit', {
-      form_id: formId,
-      form_data: formData,
-      completion_time: completionTime,
-      form_url: window.location.href,
+      formId: formId, // CRITICAL: required
+      duration: duration ? Math.round(duration) : undefined, // CRITICAL: seconds to fill form
+      formName: formElement?.name || formElement?.id || formId,
+      formAction: formElement?.action || '',
+      formMethod: formElement?.method || 'POST',
+      formData: formData, // Optional: form data
     });
   }
 
@@ -456,48 +657,56 @@ class EnhancedAnalyticsService {
   // ===== E-COMMERCE ANALYTICS =====
 
   trackProductView(productId: string, productName: string, category: string, price?: number): void {
+    // Match TRAFIKKALLOR guide: product_view for Product Purchase Funnel
     this.sendEvent('product_view', {
       product_id: productId,
       product_name: productName,
-      category,
-      price,
+      category: category,
+      price: price,
       currency: 'SEK',
     });
   }
 
   trackAddToCart(productId: string, productName: string, quantity: number, price: number): void {
+    // Match TRAFIKKALLOR guide: add_to_cart for Product Purchase Funnel
     this.sendEvent('add_to_cart', {
       product_id: productId,
       product_name: productName,
-      quantity,
-      price,
+      quantity: quantity,
+      price: price, // In SEK (not öre)
       currency: 'SEK',
     });
   }
 
-  trackCheckoutInitiated(value: number, currency: string = 'SEK', items?: any[]): void {
-    this.sendEvent('checkout_initiated', {
-      value,
-      currency,
+  trackCheckoutInitiated(checkoutId: string, amount: number, currency: string = 'SEK', items?: any[]): void {
+    // Match TRAFIKKALLOR guide: checkout event with checkoutId, amount (in öre), currency, items in eventProps
+    this.sendEvent('checkout', {
+      checkoutId: checkoutId, // CRITICAL: checkout session ID
+      amount: amount, // CRITICAL: in öre (e.g., 49900 for 499 SEK)
+      currency: currency || 'SEK',
       items: items || [],
     });
   }
 
-  trackPurchase(transactionId: string, value: number, currency: string = 'SEK', items: any[]): void {
+  trackPurchase(transactionId: string, value: number, currency: string = 'SEK', items: any[], revenue?: number): void {
+    // Match TRAFIKKALLOR guide: transactionId, value (in öre), currency, items, revenue in eventProps
     this.sendEvent('purchase', {
-      transaction_id: transactionId,
-      value,
-      currency,
-      items,
+      transactionId: transactionId, // CRITICAL: required
+      value: value, // CRITICAL: in öre (e.g., 49900 for 499 SEK)
+      revenue: revenue || value, // CRITICAL: total amount (in öre)
+      currency: currency || 'SEK',
+      items: items || [],
     });
   }
 
   // ===== USER INTERACTION ANALYTICS =====
 
-  trackCTAClick(ctaText: string, ctaType: string, location?: string): void {
+  trackCTAClick(ctaText: string, ctaType: string, location?: string, ctaId?: string): void {
+    // Match TRAFIKKALLOR guide: ctaId, ctaText, ctaType in eventProps
     this.sendEvent('cta_click', {
-      cta_text: ctaText.trim(),
-      cta_type: ctaType,
+      ctaId: ctaId || 'unknown',
+      ctaText: ctaText.trim().substring(0, 100), // Max 100 chars per guide
+      ctaType: ctaType || 'button',
       location: location || this.getElementPosition(),
     });
   }
@@ -511,11 +720,20 @@ class EnhancedAnalyticsService {
   }
 
   trackLinkClick(linkText: string, linkUrl: string, linkType: 'internal' | 'external'): void {
-    this.sendEvent('link_click', {
-      link_text: linkText.trim(),
-      link_url: linkUrl,
-      link_type: linkType,
-    });
+    // Map link clicks to valid event types (link_click is not a valid event type)
+    // Internal links will trigger page_view on navigation, so we skip them here
+    // External links are tracked as cta_click events
+    if (linkType === 'external') {
+      this.sendEvent('cta_click', {
+        ctaId: 'external_link',
+        ctaText: linkText.trim().substring(0, 100),
+        ctaType: 'external_link',
+        location: 'page',
+        link_url: linkUrl,
+        link_type: 'external',
+      });
+    }
+    // Skip internal links - they'll trigger page_view on navigation
   }
 
   trackScrollDepth(percent: number): void {
@@ -526,10 +744,11 @@ class EnhancedAnalyticsService {
     });
   }
 
-  trackTimeOnPage(seconds: number): void {
+  trackTimeOnPage(seconds: number, page?: string): void {
+    // Match TRAFIKKALLOR guide: duration in seconds, page URL in eventProps
     this.sendEvent('time_on_page', {
-      seconds,
-      minutes: Math.round(seconds / 60 * 100) / 100,
+      duration: seconds, // CRITICAL: seconds (not minutes)
+      page: page || window.location.pathname, // CRITICAL: page URL
     });
   }
 

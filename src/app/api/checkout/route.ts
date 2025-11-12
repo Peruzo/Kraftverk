@@ -1,7 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getProductDisplayName } from "@/lib/stripe-config";
-import { analytics } from "@/lib/analytics";
+import { getProductDisplayName, getStripePriceId, STRIPE_PRICE_MAPPING } from "@/lib/stripe-config";
+// Note: Checkout route is server-side, so we can't use client-side analytics here
+// Analytics tracking for checkout initiation happens client-side before redirect
 import { getCampaignPriceForProduct } from "@/lib/campaign-price-service";
 import { getStripeProductIdForKey } from "@/lib/product-mapping";
 
@@ -56,12 +57,36 @@ export async function POST(request: NextRequest) {
     console.log(`🔍 Looking for campaign price for product: ${productType}`);
     const campaignPrice = await getCampaignPriceForProduct("kraftverk", productType);
     
-    // Use campaign price if available, otherwise fetch newest active Stripe price dynamically
-    const priceId = campaignPrice?.hasCampaignPrice 
-      ? campaignPrice.priceId! 
-      : await getLatestActivePriceIdForProduct(productType);
-    if (!campaignPrice?.hasCampaignPrice) {
-      console.log('🆕 [CHECKOUT] Fallback to latest active Stripe price for product', { productType, priceId });
+    // Use campaign price if available, otherwise use mapped price or fetch dynamically
+    let priceId: string;
+    if (campaignPrice?.hasCampaignPrice) {
+      priceId = campaignPrice.priceId!;
+      console.log(`🎯 [CHECKOUT] Using campaign price: ${priceId} for product: ${productType}`);
+    } else {
+      // Try to get price from STRIPE_PRICE_MAPPING first
+      // Directly access the mapping object to avoid any type issues
+      const mappingAsRecord = STRIPE_PRICE_MAPPING as unknown as Record<string, string>;
+      const mappedPrice = mappingAsRecord[productType];
+      
+      console.log(`🔍 [CHECKOUT] Checking STRIPE_PRICE_MAPPING for "${productType}"`);
+      console.log(`🔍 [CHECKOUT] Available keys:`, Object.keys(STRIPE_PRICE_MAPPING));
+      console.log(`🔍 [CHECKOUT] Mapped price result:`, mappedPrice || 'NOT FOUND');
+      
+      if (mappedPrice) {
+        // Use direct price mapping (faster, no API call needed)
+        priceId = mappedPrice;
+        console.log(`💰 [CHECKOUT] Using mapped Stripe price for product: ${productType} -> ${priceId}`);
+      } else {
+        // Product not in mapping, try to fetch dynamically via Product ID
+        console.log(`⚠️ [CHECKOUT] Product "${productType}" not in mapping, attempting Product ID lookup`);
+        try {
+          priceId = await getLatestActivePriceIdForProduct(productType);
+          console.log(`🆕 [CHECKOUT] Got price from Product ID lookup: ${priceId} for product: ${productType}`);
+        } catch (error) {
+          console.error(`❌ [CHECKOUT] Failed to get price for product "${productType}":`, error);
+          throw error;
+        }
+      }
     }
     
     const productName = getProductDisplayName(productType);
@@ -74,18 +99,8 @@ export async function POST(request: NextRequest) {
       console.log(`💰 Using latest active Stripe price: ${priceId} for product: ${productType}`);
     }
 
-    // Track checkout initiation (don't fail if analytics fails)
-    try {
-      analytics.trackCheckout('initiated');
-      if (productId) {
-        analytics.trackMembershipAction('product_checkout_initiated', productType);
-      } else {
-        analytics.trackMembershipAction('checkout_initiated', productType);
-      }
-    } catch (analyticsError) {
-      console.warn("Analytics tracking failed:", analyticsError);
-      // Continue with checkout even if analytics fails
-    }
+    // Note: Checkout initiation tracking happens client-side before calling this API
+    // This ensures we have proper sessionId, device, and consent data
 
     // Get origin for redirect URLs
     const requestOrigin = request.headers.get("origin") || 
@@ -135,14 +150,9 @@ export async function POST(request: NextRequest) {
         if (campaign && campaign.stripeCouponId) {
           campaignDiscount = [{ coupon: campaign.stripeCouponId }];
           
-          // Track campaign applied
-          analytics.sendCustomEvent('campaign_applied', {
-            campaignId: campaign.id,
-            campaignName: campaign.name,
-            productType: productType,
-          });
-          
-          console.log(`✅ Campaign applied: ${campaign.name}`);
+          // Note: Campaign applied tracking happens client-side when user selects campaign
+          // Server-side route cannot use client-side analytics
+          console.log(`✅ Campaign applied: ${campaign.name} (${campaign.id})`);
         }
       } catch (error) {
         console.error('Failed to fetch campaign:', error);
@@ -220,7 +230,7 @@ export async function POST(request: NextRequest) {
       message: error instanceof Error ? error.message : "Unknown error",
       stack: error instanceof Error ? error.stack : undefined,
     });
-    analytics.trackCheckout('failed');
+    // Note: Checkout failure tracking happens client-side (can't use client-side analytics here)
     return NextResponse.json({ 
       error: "Payment initialization failed",
       details: error instanceof Error ? error.message : "Unknown error"

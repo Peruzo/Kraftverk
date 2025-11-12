@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useEffect } from "react";
 import Card from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
-import { analytics } from "@/lib/analytics";
+import { analytics } from "@/lib/enhanced-analytics";
 import styles from "./ProductCard.module.css";
 
 interface Product {
@@ -22,10 +22,17 @@ interface ProductCardProps {
 }
 
 export default function ProductCard({ product, onPurchase, loading = false }: ProductCardProps) {
+  // Track product view when component mounts (match TRAFIKKALLOR guide for Product Purchase Funnel)
+  useEffect(() => {
+    analytics.trackProductView(product.id, product.name, 'gym_product', product.price);
+  }, [product]);
+
   const handlePurchaseClick = () => {
-    // Track product purchase attempt
-    analytics.trackCTAClick('product_purchase', `Köp ${product.name}`, 'products_page');
-    analytics.trackMembershipAction('product_purchase_attempt', product.id);
+    // Track add to cart (match TRAFIKKALLOR guide for Product Purchase Funnel)
+    analytics.trackAddToCart(product.id, product.name, 1, product.price);
+    
+    // Also track CTA click
+    analytics.trackCTAClick(`Köp ${product.name}`, 'product_purchase', 'products_page', product.id);
     
     onPurchase(product);
   };

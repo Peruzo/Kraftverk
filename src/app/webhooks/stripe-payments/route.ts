@@ -189,17 +189,25 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
       cancelUrl: session.cancel_url,
     };
 
-    console.log(`📤 Sending customer data to portal:`, {
+    const requestId = `payment_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
+    
+    console.log(`📤 [PAYMENT ${requestId}] Sending customer data to portal:`, {
       customerEmail,
       customerName,
       amount: customerData.amount,
+      amountSEK: Math.round(customerData.amount / 100),
       currency: customerData.currency,
       productType: customerData.productType,
+      productName: customerData.productName,
       priceId: customerData.priceId,
       productId: customerData.productId,
       quantity: customerData.quantity,
       inventoryAction: customerData.inventoryAction,
+      sessionId: customerData.sessionId,
+      paymentIntentId: customerData.paymentIntentId,
     });
+    
+    console.log(`📤 [PAYMENT ${requestId}] Full customer data payload:`, JSON.stringify(customerData, null, 2));
 
     // Send to customer portal webhook endpoint
     const portalResponse = await fetch("https://source-database.onrender.com/webhooks/kraftverk-customer-data", {
@@ -210,10 +218,36 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
       body: JSON.stringify(customerData),
     });
 
+    const responseText = await portalResponse.text();
+    let portalResult;
+    try {
+      portalResult = JSON.parse(responseText);
+    } catch {
+      portalResult = { message: responseText };
+    }
+
+    console.log(`📥 [PAYMENT ${requestId}] Customer portal response:`, {
+      status: portalResponse.status,
+      statusText: portalResponse.statusText,
+      ok: portalResponse.ok,
+      responseBody: responseText.substring(0, 500),
+      parsedResult: portalResult,
+    });
+
     if (portalResponse.ok) {
-      console.log(`✅ Customer data sent to portal successfully`);
+      console.log(`✅ [PAYMENT ${requestId}] Customer data sent to portal successfully`);
     } else {
-      console.error(`❌ Failed to send customer data to portal:`, await portalResponse.text());
+      console.error(`❌ [PAYMENT ${requestId}] Failed to send customer data to portal:`, {
+        status: portalResponse.status,
+        statusText: portalResponse.statusText,
+        response: portalResult,
+        sentData: {
+          tenant: customerData.tenant,
+          customerEmail: customerData.customerEmail,
+          amount: customerData.amount,
+          productType: customerData.productType,
+        },
+      });
     }
 
     // Also send payment data to customer portal webhook in the correct format
@@ -238,6 +272,20 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
       customerId: session.customer || ""
     };
 
+    console.log(`📤 [PAYMENT ${requestId}] Sending payment webhook payload:`, {
+      tenant: webhookPayload.tenant,
+      customerEmail: webhookPayload.customerEmail,
+      customerName: webhookPayload.customerName,
+      amount: webhookPayload.amount,
+      amountSEK: webhookPayload.amount, // Already in SEK
+      currency: webhookPayload.currency,
+      productType: webhookPayload.productType,
+      productName: webhookPayload.productName,
+      sessionId: webhookPayload.sessionId,
+    });
+    
+    console.log(`📤 [PAYMENT ${requestId}] Full webhook payload:`, JSON.stringify(webhookPayload, null, 2));
+
     try {
       const webhookResponse = await fetch("https://source-database.onrender.com/webhooks/kraftverk-customer-data", {
         method: "POST",
@@ -247,17 +295,51 @@ async function sendCustomerDataToPortal(stripe: Stripe, session: Stripe.Checkout
         body: JSON.stringify(webhookPayload),
       });
 
+      const webhookResponseText = await webhookResponse.text();
+      let webhookResult;
+      try {
+        webhookResult = JSON.parse(webhookResponseText);
+      } catch {
+        webhookResult = { message: webhookResponseText };
+      }
+
+      console.log(`📥 [PAYMENT ${requestId}] Payment webhook response:`, {
+        status: webhookResponse.status,
+        statusText: webhookResponse.statusText,
+        ok: webhookResponse.ok,
+        responseBody: webhookResponseText.substring(0, 500),
+        parsedResult: webhookResult,
+      });
+
       if (webhookResponse.ok) {
-        console.log(`✅ Payment data sent to customer portal webhook successfully`);
+        console.log(`✅ [PAYMENT ${requestId}] Payment data sent to customer portal webhook successfully`);
       } else {
-        console.error(`❌ Failed to send payment data to customer portal webhook:`, await webhookResponse.text());
+        console.error(`❌ [PAYMENT ${requestId}] Failed to send payment data to customer portal webhook:`, {
+          status: webhookResponse.status,
+          statusText: webhookResponse.statusText,
+          response: webhookResult,
+          sentPayload: {
+            tenant: webhookPayload.tenant,
+            customerEmail: webhookPayload.customerEmail,
+            amount: webhookPayload.amount,
+            amountSEK: webhookPayload.amount, // Already in SEK
+            productType: webhookPayload.productType,
+          },
+        });
       }
     } catch (error) {
-      console.error("Error sending payment data to customer portal webhook:", error);
+      console.error(`❌ [PAYMENT ${requestId}] Error sending payment data to customer portal webhook:`, {
+        error: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined,
+      });
     }
 
   } catch (error) {
-    console.error("Error sending customer data to portal:", error);
+    console.error(`❌ [PAYMENT] Error sending customer data to portal:`, {
+      error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
+      sessionId: session?.id,
+    });
   }
 }
 

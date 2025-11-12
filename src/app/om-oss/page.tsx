@@ -1,6 +1,7 @@
 import React from "react";
 import Card from "@/components/ui/Card";
 import TrainerCard from "@/components/pt/TrainerCard";
+import ContactForm from "@/components/contact/ContactForm";
 import trainers from "@/data/trainers.json";
 import styles from "./page.module.css";
 
@@ -226,6 +227,65 @@ export default function OmOssPage() {
               </div>
             </Card>
           </div>
+        </section>
+
+        {/* Integritet & Cookies */}
+        <section className={styles.section} id="integritet">
+          <h2 className={styles.sectionTitle}>Integritet & Cookies</h2>
+          <Card padding="lg">
+            <div className={styles.privacyContent}>
+              <h3 className={styles.privacyTitle}>Din integritet är viktig för oss</h3>
+              <p className={styles.privacyText}>
+                Kraftverk Studio följer GDPR (Dataskyddsförordningen) och tar ditt personliga integritet på största allvar.
+              </p>
+              
+              <h4 className={styles.privacySubtitle}>Vad är cookies?</h4>
+              <p className={styles.privacyText}>
+                Cookies är små textfiler som lagras på din enhet när du besöker vår webbplats. Vi använder cookies för att:
+              </p>
+              <ul className={styles.privacyList}>
+                <li>Analysera trafik och användarbeteende på vår webbplats</li>
+                <li>Förbättra användarupplevelsen</li>
+                <li>Visa relevant innehåll och erbjudanden</li>
+              </ul>
+
+              <h4 className={styles.privacySubtitle}>Dina rättigheter</h4>
+              <p className={styles.privacyText}>
+                Enligt GDPR har du rätt att:
+              </p>
+              <ul className={styles.privacyList}>
+                <li>Veta vilka personuppgifter vi samlar in</li>
+                <li>Få tillgång till dina personuppgifter</li>
+                <li>Rätta felaktiga uppgifter</li>
+                <li>Begära radering av dina uppgifter</li>
+                <li>När som helst ändra dina cookie-inställningar</li>
+              </ul>
+
+              <h4 className={styles.privacySubtitle}>Hur vi använder dina uppgifter</h4>
+              <p className={styles.privacyText}>
+                Vi samlar endast in nödvändig information för att tillhandahålla vår tjänst och förbättra din upplevelse. 
+                Vi delar aldrig dina personuppgifter med tredje part utan ditt samtycke, utom i de fall som krävs enligt lag.
+              </p>
+
+              <h4 className={styles.privacySubtitle}>Cookies-inställningar</h4>
+              <p className={styles.privacyText}>
+                Du kan när som helst ändra dina cookie-inställningar genom att rensa din webbläsares cookies-inställningar 
+                eller kontakta oss. Observera att vissa funktioner på webbplatsen kanske inte fungerar optimalt om du väljer 
+                att avvisa cookies.
+              </p>
+
+              <h4 className={styles.privacySubtitle}>Kontakt</h4>
+              <p className={styles.privacyText}>
+                Om du har frågor om vår integritetspolicy eller vill utöva dina rättigheter, kontakta oss via formuläret nedan 
+                eller på <a href="mailto:integritet@kraftverk.se" className={styles.privacyLink}>integritet@kraftverk.se</a>.
+              </p>
+            </div>
+          </Card>
+        </section>
+
+        {/* Contact Form */}
+        <section className={styles.section}>
+          <ContactForm />
         </section>
       </div>
     </div>
