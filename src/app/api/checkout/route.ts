@@ -1,9 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import Stripe from "stripe";
-import { getProductDisplayName, getStripePriceId, STRIPE_PRICE_MAPPING } from "@/lib/stripe-config";
+import { getProductDisplayName } from "@/lib/stripe-config";
 // Note: Checkout route is server-side, so we can't use client-side analytics here
 // Analytics tracking for checkout initiation happens client-side before redirect
-import { getCampaignPriceForProduct } from "@/lib/campaign-price-service";
 import { getStripeProductIdForKey } from "@/lib/product-mapping";
 
 function getStripeClient() {
@@ -53,51 +52,20 @@ export async function POST(request: NextRequest) {
     // Determine product type and get corresponding Stripe price
     const productType = membershipId || classInstanceId || productId || "class-booking";
     
-    // Check for campaign price - local lookup, no external API calls!
-    console.log(`🔍 Looking for campaign price for product: ${productType}`);
-    const campaignPrice = await getCampaignPriceForProduct("kraftverk", productType);
-    
-    // Use campaign price if available, otherwise use mapped price or fetch dynamically
+    // Use Tanja's approach: ALWAYS query Stripe for latest active price
+    // This automatically handles campaigns (newest active price wins)
+    console.log(`🔍 [CHECKOUT] Fetching latest active price for product: ${productType}`);
     let priceId: string;
-    if (campaignPrice?.hasCampaignPrice) {
-      priceId = campaignPrice.priceId!;
-      console.log(`🎯 [CHECKOUT] Using campaign price: ${priceId} for product: ${productType}`);
-    } else {
-      // Try to get price from STRIPE_PRICE_MAPPING first
-      // Directly access the mapping object to avoid any type issues
-      const mappingAsRecord = STRIPE_PRICE_MAPPING as unknown as Record<string, string>;
-      const mappedPrice = mappingAsRecord[productType];
-      
-      console.log(`🔍 [CHECKOUT] Checking STRIPE_PRICE_MAPPING for "${productType}"`);
-      console.log(`🔍 [CHECKOUT] Available keys:`, Object.keys(STRIPE_PRICE_MAPPING));
-      console.log(`🔍 [CHECKOUT] Mapped price result:`, mappedPrice || 'NOT FOUND');
-      
-      if (mappedPrice) {
-        // Use direct price mapping (faster, no API call needed)
-        priceId = mappedPrice;
-        console.log(`💰 [CHECKOUT] Using mapped Stripe price for product: ${productType} -> ${priceId}`);
-      } else {
-        // Product not in mapping, try to fetch dynamically via Product ID
-        console.log(`⚠️ [CHECKOUT] Product "${productType}" not in mapping, attempting Product ID lookup`);
-        try {
-          priceId = await getLatestActivePriceIdForProduct(productType);
-          console.log(`🆕 [CHECKOUT] Got price from Product ID lookup: ${priceId} for product: ${productType}`);
-        } catch (error) {
-          console.error(`❌ [CHECKOUT] Failed to get price for product "${productType}":`, error);
-          throw error;
-        }
-      }
+    
+    try {
+      priceId = await getLatestActivePriceIdForProduct(productType);
+      console.log(`✅ [CHECKOUT] Using latest active Stripe price: ${priceId} for product: ${productType}`);
+    } catch (error) {
+      console.error(`❌ [CHECKOUT] Failed to get price for product "${productType}":`, error);
+      throw error;
     }
     
     const productName = getProductDisplayName(productType);
-    
-    // Log price source
-    if (campaignPrice?.hasCampaignPrice) {
-      console.log(`🎯 Using campaign price: ${campaignPrice.priceId} for product: ${productType}`);
-      console.log(`   Campaign: ${campaignPrice.campaignName} (${campaignPrice.campaignId})`);
-    } else {
-      console.log(`💰 Using latest active Stripe price: ${priceId} for product: ${productType}`);
-    }
 
     // Note: Checkout initiation tracking happens client-side before calling this API
     // This ensures we have proper sessionId, device, and consent data
